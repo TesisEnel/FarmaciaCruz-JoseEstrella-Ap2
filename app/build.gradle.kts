@@ -50,6 +50,7 @@ dependencies {
     implementation("androidx.hilt:hilt-work:1.2.0")
     implementation(libs.androidx.datastore.core.android)
     implementation(libs.firebase.firestore.ktx)
+    implementation(libs.androidx.compose.animation.core.lint)
     ksp("androidx.hilt:hilt-compiler:1.2.0")
     implementation("androidx.work:work-runtime-ktx:2.9.1")
     implementation("androidx.startup:startup-runtime:1.1.1")
@@ -75,6 +76,8 @@ dependencies {
     implementation("com.google.dagger:hilt-android:2.51")
     ksp("com.google.dagger:hilt-android-compiler:2.51")
     implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
+    implementation("androidx.compose.material:material-icons-extended:1.5.4")
+
 
     // DataStore
     implementation("androidx.datastore:datastore-preferences:1.0.0")
