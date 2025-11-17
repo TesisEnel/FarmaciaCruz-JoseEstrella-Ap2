@@ -6,6 +6,7 @@ import edu.ucne.farmaciacruz.data.remote.dto.UsuarioDto
 import edu.ucne.farmaciacruz.data.remote.request.ChangePasswordRequest
 import edu.ucne.farmaciacruz.data.remote.request.CreateProductoRequest
 import edu.ucne.farmaciacruz.data.remote.request.LoginRequest
+import edu.ucne.farmaciacruz.data.remote.request.RecoveryRequest
 import edu.ucne.farmaciacruz.data.remote.request.RefreshTokenRequest
 import edu.ucne.farmaciacruz.data.remote.request.RegisterRequest
 import edu.ucne.farmaciacruz.data.remote.request.UpdateProfileRequest
@@ -36,6 +37,9 @@ interface ApiService {
 
     @POST("api/Usuarios/cambiar-password")
     suspend fun changePassword(@Body request: ChangePasswordRequest): Response<ApiResponse<Unit>>
+
+    @POST("api/Usuarios/solicitar-recuperacion-password")
+    suspend fun RecoveryPassword(@Body request: RecoveryRequest): Response<ApiResponse<Unit>>
 
 
     @GET("api/Productos")
