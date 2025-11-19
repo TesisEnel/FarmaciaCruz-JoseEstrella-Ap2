@@ -61,9 +61,6 @@ fun AppNavigation(
                 },
                 onConfigClick = {
                     navController.navigate(ConfiguracionRoute)
-                },
-                onCarritoClick = {
-                    navController.navigate(CarritoRoute)
                 }
             )
         }
@@ -83,9 +80,6 @@ fun AppNavigation(
 
         composable<ProductoDetalleRoute> { backStackEntry ->
             val args = backStackEntry.toRoute<ProductoDetalleRoute>()
-        }
-
-        composable<CarritoRoute> {
         }
 
         composable<RegistroRoute> {
