@@ -24,18 +24,20 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
+import edu.ucne.farmaciacruz.domain.model.CarritoItem
 import edu.ucne.farmaciacruz.domain.model.Producto
+import edu.ucne.farmaciacruz.presentation.carrito.CarritoBottomSheet
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProductosScreen(
     onProductoClick: (Int) -> Unit,
     onConfigClick: () -> Unit,
-    onCarritoClick: () -> Unit,
     viewModel: ProductosViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    var showCarritoSheet by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.event.collect { event ->
@@ -50,6 +52,23 @@ fun ProductosScreen(
         }
     }
 
+    if (showCarritoSheet) {
+        CarritoBottomSheet(
+            carrito = state.carrito,
+            total = state.carrito.sumOf { it.producto.precio * it.cantidad },
+            onDismiss = { showCarritoSheet = false },
+            onUpdateQuantity = { productoId, cantidad ->
+                viewModel.processIntent(ProductosIntent.UpdateQuantity(productoId, cantidad))
+            },
+            onRemoveItem = { productoId ->
+                viewModel.processIntent(ProductosIntent.RemoveFromCart(productoId))
+            },
+            onProceedToCheckout = {
+                showCarritoSheet = false
+            }
+        )
+    }
+
     ProductosScreenContent(
         state = state,
         snackbarHostState = snackbarHostState,
@@ -59,7 +78,9 @@ fun ProductosScreen(
         onProductoClicked = { viewModel.processIntent(ProductosIntent.ProductoClicked(it)) },
         onAddToCart = { viewModel.processIntent(ProductosIntent.AddToCart(it)) },
         onLoadProductos = { viewModel.processIntent(ProductosIntent.LoadProductos) },
-        onCarritoClick = onCarritoClick,
+        onCarritoClick = {
+            showCarritoSheet = true
+        },
         onConfigClick = onConfigClick
     )
 }
