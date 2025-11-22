@@ -8,11 +8,11 @@ import edu.ucne.farmaciacruz.domain.model.Producto
 import edu.ucne.farmaciacruz.domain.model.Resource
 import edu.ucne.farmaciacruz.domain.usecase.producto.GetProductosUseCase
 import edu.ucne.farmaciacruz.domain.usecase.producto.SearchProductosUseCase
-import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -26,23 +26,23 @@ class ProductosViewModel @Inject constructor(
     private val _state = MutableStateFlow(ProductosState())
     val state: StateFlow<ProductosState> = _state.asStateFlow()
 
-    private val _event = Channel<ProductosEvent>(Channel.BUFFERED)
-    val event = _event.receiveAsFlow()
+    private val _uiEvent = MutableSharedFlow<ProductosUiEvent>()
+    val uiEvent = _uiEvent.asSharedFlow()
 
     init {
-        processIntent(ProductosIntent.LoadProductos)
+        onEvent(ProductosEvent.LoadProductos)
     }
 
-    fun processIntent(intent: ProductosIntent) {
-        when (intent) {
-            is ProductosIntent.LoadProductos -> handleLoadProductos()
-            is ProductosIntent.SearchQueryChanged -> handleSearchQueryChanged(intent.query)
-            is ProductosIntent.CategoriaSelected -> handleCategoriaSelected(intent.categoria)
-            is ProductosIntent.ProductoClicked -> handleProductoClicked(intent.productoId)
-            is ProductosIntent.AddToCart -> handleAddToCart(intent.producto)
-            is ProductosIntent.RemoveFromCart -> handleRemoveFromCart(intent.productoId)
-            is ProductosIntent.UpdateQuantity -> handleUpdateQuantity(intent.productoId, intent.cantidad)
-            is ProductosIntent.ClearError -> handleClearError()
+    fun onEvent(event: ProductosEvent) {
+        when (event) {
+            is ProductosEvent.LoadProductos -> handleLoadProductos()
+            is ProductosEvent.SearchQueryChanged -> handleSearchQueryChanged(event.query)
+            is ProductosEvent.CategoriaSelected -> handleCategoriaSelected(event.categoria)
+            is ProductosEvent.ProductoClicked -> handleProductoClicked(event.productoId)
+            is ProductosEvent.AddToCart -> handleAddToCart(event.producto)
+            is ProductosEvent.RemoveFromCart -> handleRemoveFromCart(event.productoId)
+            is ProductosEvent.UpdateQuantity -> handleUpdateQuantity(event.productoId, event.cantidad)
+            is ProductosEvent.ClearError -> handleClearError()
         }
     }
 
@@ -74,7 +74,7 @@ class ProductosViewModel @Inject constructor(
                                 error = result.message
                             )
                         }
-                        _event.send(ProductosEvent.ShowError(result.message ?: "Error desconocido"))
+                        _uiEvent.emit(ProductosUiEvent.ShowError(result.message ?: "Error desconocido"))
                     }
                 }
             }
@@ -106,7 +106,6 @@ class ProductosViewModel @Inject constructor(
                     is Resource.Success -> {
                         val productos = result.data ?: emptyList()
 
-                        // Aplicar filtro de categoría si está seleccionada
                         val productosFiltrados = if (_state.value.selectedCategoria != null) {
                             productos.filter { it.categoria == _state.value.selectedCategoria }
                         } else {
@@ -128,7 +127,7 @@ class ProductosViewModel @Inject constructor(
                                 isLoading = false
                             )
                         }
-                        _event.send(ProductosEvent.ShowError(result.message ?: "Error en la búsqueda"))
+                        _uiEvent.emit(ProductosUiEvent.ShowError(result.message ?: "Error en la búsqueda"))
                     }
                 }
             }
@@ -156,7 +155,7 @@ class ProductosViewModel @Inject constructor(
 
     private fun handleProductoClicked(productoId: Int) {
         viewModelScope.launch {
-            _event.send(ProductosEvent.NavigateToDetail(productoId))
+            _uiEvent.emit(ProductosUiEvent.NavigateToDetail(productoId))
         }
     }
 
@@ -167,12 +166,12 @@ class ProductosViewModel @Inject constructor(
         if (itemExistente != null) {
             itemExistente.cantidad++
             viewModelScope.launch {
-                _event.send(ProductosEvent.ShowSuccess("Cantidad actualizada en el carrito"))
+                _uiEvent.emit(ProductosUiEvent.ShowSuccess("Cantidad actualizada en el carrito"))
             }
         } else {
             carritoActual.add(CarritoItem(producto, 1))
             viewModelScope.launch {
-                _event.send(ProductosEvent.ShowSuccess("Producto agregado al carrito"))
+                _uiEvent.emit(ProductosUiEvent.ShowSuccess("Producto agregado al carrito"))
             }
         }
 
@@ -185,7 +184,7 @@ class ProductosViewModel @Inject constructor(
         _state.update { it.copy(carrito = carritoActual) }
 
         viewModelScope.launch {
-            _event.send(ProductosEvent.ShowSuccess("Producto eliminado del carrito"))
+            _uiEvent.emit(ProductosUiEvent.ShowSuccess("Producto eliminado del carrito"))
         }
     }
 
@@ -197,7 +196,7 @@ class ProductosViewModel @Inject constructor(
             if (cantidad <= 0) {
                 carritoActual.remove(item)
                 viewModelScope.launch {
-                    _event.send(ProductosEvent.ShowSuccess("Producto eliminado del carrito"))
+                    _uiEvent.emit(ProductosUiEvent.ShowSuccess("Producto eliminado del carrito"))
                 }
             } else {
                 item.cantidad = cantidad

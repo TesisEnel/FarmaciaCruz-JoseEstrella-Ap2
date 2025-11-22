@@ -1,4 +1,3 @@
-
 package edu.ucne.farmaciacruz.presentation.producto
 
 import androidx.compose.foundation.background
@@ -23,10 +22,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
-import edu.ucne.farmaciacruz.domain.model.CarritoItem
 import edu.ucne.farmaciacruz.domain.model.Producto
 import edu.ucne.farmaciacruz.presentation.carrito.CarritoBottomSheet
+import edu.ucne.farmaciacruz.ui.theme.FarmaciaCruzTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,18 +35,18 @@ fun ProductosScreen(
     onConfigClick: () -> Unit,
     viewModel: ProductosViewModel = hiltViewModel()
 ) {
-    val state by viewModel.state.collectAsState()
+    val state by viewModel.state.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     var showCarritoSheet by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
-        viewModel.event.collect { event ->
+        viewModel.uiEvent.collect { event ->
             when (event) {
-                is ProductosEvent.ShowError ->
+                is ProductosUiEvent.ShowError ->
                     snackbarHostState.showSnackbar(event.message)
-                is ProductosEvent.ShowSuccess ->
+                is ProductosUiEvent.ShowSuccess ->
                     snackbarHostState.showSnackbar(event.message)
-                is ProductosEvent.NavigateToDetail ->
+                is ProductosUiEvent.NavigateToDetail ->
                     onProductoClick(event.productoId)
             }
         }
@@ -58,10 +58,10 @@ fun ProductosScreen(
             total = state.carrito.sumOf { it.producto.precio * it.cantidad },
             onDismiss = { showCarritoSheet = false },
             onUpdateQuantity = { productoId, cantidad ->
-                viewModel.processIntent(ProductosIntent.UpdateQuantity(productoId, cantidad))
+                viewModel.onEvent(ProductosEvent.UpdateQuantity(productoId, cantidad))
             },
             onRemoveItem = { productoId ->
-                viewModel.processIntent(ProductosIntent.RemoveFromCart(productoId))
+                viewModel.onEvent(ProductosEvent.RemoveFromCart(productoId))
             },
             onProceedToCheckout = {
                 showCarritoSheet = false
@@ -73,14 +73,8 @@ fun ProductosScreen(
         state = state,
         snackbarHostState = snackbarHostState,
         cantidadCarrito = viewModel.getCantidadItemsCarrito(),
-        onSearchQueryChanged = { viewModel.processIntent(ProductosIntent.SearchQueryChanged(it)) },
-        onCategoriaSelected = { viewModel.processIntent(ProductosIntent.CategoriaSelected(it)) },
-        onProductoClicked = { viewModel.processIntent(ProductosIntent.ProductoClicked(it)) },
-        onAddToCart = { viewModel.processIntent(ProductosIntent.AddToCart(it)) },
-        onLoadProductos = { viewModel.processIntent(ProductosIntent.LoadProductos) },
-        onCarritoClick = {
-            showCarritoSheet = true
-        },
+        onEvent = viewModel::onEvent,
+        onCarritoClick = { showCarritoSheet = true },
         onConfigClick = onConfigClick
     )
 }
@@ -91,11 +85,7 @@ private fun ProductosScreenContent(
     state: ProductosState,
     snackbarHostState: SnackbarHostState,
     cantidadCarrito: Int,
-    onSearchQueryChanged: (String) -> Unit,
-    onCategoriaSelected: (String?) -> Unit,
-    onProductoClicked: (Int) -> Unit,
-    onAddToCart: (Producto) -> Unit,
-    onLoadProductos: () -> Unit,
+    onEvent: (ProductosEvent) -> Unit,
     onCarritoClick: () -> Unit,
     onConfigClick: () -> Unit
 ) {
@@ -167,7 +157,7 @@ private fun ProductosScreenContent(
 
                     OutlinedTextField(
                         value = state.searchQuery,
-                        onValueChange = onSearchQueryChanged,
+                        onValueChange = { onEvent(ProductosEvent.SearchQueryChanged(it)) },
                         modifier = Modifier.fillMaxWidth(),
                         placeholder = {
                             Text("Buscar productos…")
@@ -182,7 +172,7 @@ private fun ProductosScreenContent(
                         trailingIcon = {
                             if (state.searchQuery.isNotEmpty()) {
                                 IconButton(
-                                    onClick = { onSearchQueryChanged("") }
+                                    onClick = { onEvent(ProductosEvent.SearchQueryChanged("")) }
                                 ) {
                                     Icon(
                                         Icons.Filled.Clear,
@@ -240,10 +230,10 @@ private fun ProductosScreenContent(
                                 tint = MaterialTheme.colorScheme.error
                             )
                             Text(
-                                text = state.error!!,
+                                text = state.error,
                                 style = MaterialTheme.typography.bodyLarge
                             )
-                            Button(onClick = onLoadProductos) {
+                            Button(onClick = { onEvent(ProductosEvent.LoadProductos) }) {
                                 Text("Reintentar")
                             }
                         }
@@ -293,14 +283,14 @@ private fun ProductosScreenContent(
                                     ) {
                                         FilterChip(
                                             selected = state.selectedCategoria == null,
-                                            onClick = { onCategoriaSelected(null) },
+                                            onClick = { onEvent(ProductosEvent.CategoriaSelected(null)) },
                                             label = { Text("Todas") }
                                         )
 
                                         state.categorias.take(3).forEach { categoria ->
                                             FilterChip(
                                                 selected = state.selectedCategoria == categoria,
-                                                onClick = { onCategoriaSelected(categoria) },
+                                                onClick = { onEvent(ProductosEvent.CategoriaSelected(categoria)) },
                                                 label = { Text(categoria) }
                                             )
                                         }
@@ -358,8 +348,8 @@ private fun ProductosScreenContent(
                             items(state.productosFiltrados) { producto ->
                                 ProductoCard(
                                     producto = producto,
-                                    onClick = { onProductoClicked(producto.id) },
-                                    onAddToCart = { onAddToCart(producto) }
+                                    onClick = { onEvent(ProductosEvent.ProductoClicked(producto.id)) },
+                                    onAddToCart = { onEvent(ProductosEvent.AddToCart(producto)) }
                                 )
                             }
                         }
@@ -574,10 +564,61 @@ fun ProductoCard(
     }
 }
 
+// ===== PREVIEWS =====
 
-@Preview(showBackground = true, showSystemUi = true)
+@Preview(name = "Productos Screen - Light", showBackground = true)
 @Composable
-fun ProductosScreenPreview() {
+private fun ProductosScreenPreview() {
+    val sampleProductos = listOf(
+        Producto(
+            id = 1,
+            nombre = "Paracetamol 500mg",
+            descripcion = "Analgésico y antipirético",
+            precio = 45.00,
+            imagenUrl = "",
+            categoria = "Medicamentos"
+        ),
+        Producto(
+            id = 2,
+            nombre = "Ibuprofeno 400mg",
+            descripcion = "Antiinflamatorio",
+            precio = 65.00,
+            imagenUrl = "",
+            categoria = "Medicamentos"
+        ),
+        Producto(
+            id = 3,
+            nombre = "Vitamina C 1000mg",
+            descripcion = "Suplemento vitamínico",
+            precio = 35.00,
+            imagenUrl = "",
+            categoria = "Vitaminas"
+        )
+    )
+
+    FarmaciaCruzTheme {
+        ProductosScreenContent(
+            state = ProductosState(
+                productos = sampleProductos,
+                productosFiltrados = sampleProductos,
+                categorias = listOf("Medicamentos", "Vitaminas"),
+                selectedCategoria = null,
+                searchQuery = "",
+                isLoading = false,
+                error = null
+            ),
+            snackbarHostState = remember { SnackbarHostState() },
+            cantidadCarrito = 3,
+            onEvent = {},
+            onCarritoClick = {},
+            onConfigClick = {}
+        )
+    }
+}
+
+@Preview(name = "Productos Screen - Dark", showBackground = true)
+@Composable
+private fun ProductosScreenPreviewDark() {
     val sampleProductos = listOf(
         Producto(
             id = 1,
@@ -597,7 +638,7 @@ fun ProductosScreenPreview() {
         )
     )
 
-    MaterialTheme {
+    FarmaciaCruzTheme(darkTheme = true) {
         ProductosScreenContent(
             state = ProductosState(
                 productos = sampleProductos,
@@ -609,12 +650,25 @@ fun ProductosScreenPreview() {
                 error = null
             ),
             snackbarHostState = remember { SnackbarHostState() },
-            cantidadCarrito = 3,
-            onSearchQueryChanged = {},
-            onCategoriaSelected = {},
-            onProductoClicked = {},
-            onAddToCart = {},
-            onLoadProductos = {},
+            cantidadCarrito = 0,
+            onEvent = {},
+            onCarritoClick = {},
+            onConfigClick = {}
+        )
+    }
+}
+
+@Preview(name = "Productos Screen - Loading", showBackground = true)
+@Composable
+private fun ProductosScreenLoadingPreview() {
+    FarmaciaCruzTheme {
+        ProductosScreenContent(
+            state = ProductosState(
+                isLoading = true
+            ),
+            snackbarHostState = remember { SnackbarHostState() },
+            cantidadCarrito = 0,
+            onEvent = {},
             onCarritoClick = {},
             onConfigClick = {}
         )
