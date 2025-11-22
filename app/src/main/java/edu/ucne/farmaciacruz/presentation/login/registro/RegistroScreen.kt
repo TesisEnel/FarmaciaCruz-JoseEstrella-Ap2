@@ -9,7 +9,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.Medication
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -19,32 +18,27 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import edu.ucne.farmaciacruz.R
 import edu.ucne.farmaciacruz.ui.theme.onPrimaryContainerDarkHighContrast
 
+sealed class RegistroUiEvent {
+    data object NavigateToHome : RegistroUiEvent()
+}
 @Composable
 fun RegistroScreen(
     onRegistroSuccess: () -> Unit,
     onBackToLogin: () -> Unit,
     viewModel: RegistroViewModel = hiltViewModel()
 ) {
-    val state by viewModel.state.collectAsState()
+    val state by viewModel.state.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) {
-        viewModel.event.collect { event ->
+        viewModel.uiEvent.collect { event ->
             when (event) {
-                is RegistroEvent.ShowError -> {
-
-                }
-
-                is RegistroEvent.ShowSuccess -> {
-
-                }
-
-                is RegistroEvent.NavigateToHome -> {
+                is RegistroUiEvent.NavigateToHome -> {
                     onRegistroSuccess()
                 }
             }
@@ -53,32 +47,16 @@ fun RegistroScreen(
 
     RegistroContent(
         state = state,
-        onNombreChanged = { viewModel.processIntent(RegistroIntent.NombreChanged(it)) },
-        onApellidoChanged = { viewModel.processIntent(RegistroIntent.ApellidoChanged(it)) },
-        onEmailChanged = { viewModel.processIntent(RegistroIntent.EmailChanged(it)) },
-        onTelefonoChanged = { viewModel.processIntent(RegistroIntent.TelefonoChanged(it)) },
-        onPasswordChanged = { viewModel.processIntent(RegistroIntent.PasswordChanged(it)) },
-        onConfirmarPasswordChanged = { viewModel.processIntent(RegistroIntent.ConfirmarPasswordChanged(it)) },
-        onTerminosChanged = { viewModel.processIntent(RegistroIntent.TerminosChanged(it)) },
-        onRegistrarClicked = { viewModel.processIntent(RegistroIntent.RegistrarClicked) },
-        onBackToLogin = onBackToLogin,
-        onClearError = { viewModel.processIntent(RegistroIntent.ClearError) }
+        onEvent = viewModel::onEvent,
+        onBackToLogin = onBackToLogin
     )
 }
 
 @Composable
 private fun RegistroContent(
     state: RegistroState,
-    onNombreChanged: (String) -> Unit,
-    onApellidoChanged: (String) -> Unit,
-    onEmailChanged: (String) -> Unit,
-    onTelefonoChanged: (String) -> Unit,
-    onPasswordChanged: (String) -> Unit,
-    onConfirmarPasswordChanged: (String) -> Unit,
-    onTerminosChanged: (Boolean) -> Unit,
-    onRegistrarClicked: () -> Unit,
-    onBackToLogin: () -> Unit,
-    onClearError: () -> Unit
+    onEvent: (RegistroEvent) -> Unit,
+    onBackToLogin: () -> Unit
 ) {
     var passwordVisible by remember { mutableStateOf(false) }
     var confirmarPasswordVisible by remember { mutableStateOf(false) }
@@ -106,10 +84,7 @@ private fun RegistroContent(
                     Image(
                         painter = painterResource(id = R.drawable.logo_farmacia_cruz),
                         contentDescription = "Farmacia Cruz Logo",
-                        modifier = Modifier
-                            .size(180.dp)
-
-
+                        modifier = Modifier.size(180.dp)
                     )
                 }
             }
@@ -156,12 +131,10 @@ private fun RegistroContent(
                     )
                     OutlinedTextField(
                         value = state.nombre,
-                        onValueChange = onNombreChanged,
+                        onValueChange = { onEvent(RegistroEvent.NombreChanged(it)) },
                         modifier = Modifier.fillMaxWidth(),
                         placeholder = { Text("José Gabriel") },
-                        leadingIcon = {
-                            Icon(Icons.Default.Person, null)
-                        },
+                        leadingIcon = { Icon(Icons.Default.Person, null) },
                         singleLine = true,
                         enabled = !state.isLoading,
                         shape = RoundedCornerShape(12.dp),
@@ -170,6 +143,7 @@ private fun RegistroContent(
                             unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant
                         )
                     )
+
                     Text(
                         text = "Apellido",
                         style = MaterialTheme.typography.bodyMedium,
@@ -177,12 +151,10 @@ private fun RegistroContent(
                     )
                     OutlinedTextField(
                         value = state.apellido,
-                        onValueChange = onApellidoChanged,
+                        onValueChange = { onEvent(RegistroEvent.ApellidoChanged(it)) },
                         modifier = Modifier.fillMaxWidth(),
                         placeholder = { Text("Estrella") },
-                        leadingIcon = {
-                            Icon(Icons.Default.Person, null)
-                        },
+                        leadingIcon = { Icon(Icons.Default.Person, null) },
                         singleLine = true,
                         enabled = !state.isLoading,
                         shape = RoundedCornerShape(12.dp),
@@ -191,6 +163,7 @@ private fun RegistroContent(
                             unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant
                         )
                     )
+
                     Text(
                         text = "Correo electrónico",
                         style = MaterialTheme.typography.bodyMedium,
@@ -198,12 +171,10 @@ private fun RegistroContent(
                     )
                     OutlinedTextField(
                         value = state.email,
-                        onValueChange = onEmailChanged,
+                        onValueChange = { onEvent(RegistroEvent.EmailChanged(it)) },
                         modifier = Modifier.fillMaxWidth(),
                         placeholder = { Text("ejemplo@correo.com") },
-                        leadingIcon = {
-                            Icon(Icons.Default.Email, null)
-                        },
+                        leadingIcon = { Icon(Icons.Default.Email, null) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                         singleLine = true,
                         enabled = !state.isLoading,
@@ -221,12 +192,10 @@ private fun RegistroContent(
                     )
                     OutlinedTextField(
                         value = state.telefono,
-                        onValueChange = onTelefonoChanged,
+                        onValueChange = { onEvent(RegistroEvent.TelefonoChanged(it)) },
                         modifier = Modifier.fillMaxWidth(),
                         placeholder = { Text("+1 829 230 1111") },
-                        leadingIcon = {
-                            Icon(Icons.Default.Phone, null)
-                        },
+                        leadingIcon = { Icon(Icons.Default.Phone, null) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                         singleLine = true,
                         enabled = !state.isLoading,
@@ -244,21 +213,21 @@ private fun RegistroContent(
                     )
                     OutlinedTextField(
                         value = state.password,
-                        onValueChange = onPasswordChanged,
+                        onValueChange = { onEvent(RegistroEvent.PasswordChanged(it)) },
                         modifier = Modifier.fillMaxWidth(),
                         placeholder = { Text("········") },
-                        leadingIcon = {
-                            Icon(Icons.Default.Lock, null)
-                        },
+                        leadingIcon = { Icon(Icons.Default.Lock, null) },
                         trailingIcon = {
                             IconButton(onClick = { passwordVisible = !passwordVisible }) {
                                 Icon(
-                                    if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                                    if (passwordVisible) Icons.Default.Visibility
+                                    else Icons.Default.VisibilityOff,
                                     null
                                 )
                             }
                         },
-                        visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                        visualTransformation = if (passwordVisible)
+                            VisualTransformation.None else PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                         singleLine = true,
                         enabled = !state.isLoading,
@@ -276,23 +245,23 @@ private fun RegistroContent(
                     )
                     OutlinedTextField(
                         value = state.confirmarPassword,
-                        onValueChange = onConfirmarPasswordChanged,
+                        onValueChange = { onEvent(RegistroEvent.ConfirmarPasswordChanged(it)) },
                         modifier = Modifier.fillMaxWidth(),
                         placeholder = { Text("········") },
-                        leadingIcon = {
-                            Icon(Icons.Default.Lock, null)
-                        },
+                        leadingIcon = { Icon(Icons.Default.Lock, null) },
                         trailingIcon = {
                             IconButton(onClick = {
                                 confirmarPasswordVisible = !confirmarPasswordVisible
                             }) {
                                 Icon(
-                                    if (confirmarPasswordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                                    if (confirmarPasswordVisible) Icons.Default.Visibility
+                                    else Icons.Default.VisibilityOff,
                                     null
                                 )
                             }
                         },
-                        visualTransformation = if (confirmarPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                        visualTransformation = if (confirmarPasswordVisible)
+                            VisualTransformation.None else PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                         singleLine = true,
                         enabled = !state.isLoading,
@@ -311,7 +280,7 @@ private fun RegistroContent(
                     ) {
                         Checkbox(
                             checked = state.aceptaTerminos,
-                            onCheckedChange = onTerminosChanged,
+                            onCheckedChange = { onEvent(RegistroEvent.TerminosChanged(it)) },
                             enabled = !state.isLoading
                         )
                         Text(
@@ -324,7 +293,7 @@ private fun RegistroContent(
                     Spacer(modifier = Modifier.height(8.dp))
 
                     Button(
-                        onClick = onRegistrarClicked,
+                        onClick = { onEvent(RegistroEvent.RegistrarClicked) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(50.dp),
@@ -369,7 +338,8 @@ private fun RegistroContent(
                     }
                 }
             }
-            if (state.error != null) {
+
+            state.error?.let { error ->
                 Spacer(modifier = Modifier.height(16.dp))
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -386,13 +356,13 @@ private fun RegistroContent(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = state.error!!,
+                            text = error,
                             color = MaterialTheme.colorScheme.onErrorContainer,
                             style = MaterialTheme.typography.bodyMedium,
                             modifier = Modifier.weight(1f)
                         )
                         IconButton(
-                            onClick = onClearError,
+                            onClick = { onEvent(RegistroEvent.ClearError) },
                             modifier = Modifier.size(20.dp)
                         ) {
                             Text(
@@ -405,35 +375,5 @@ private fun RegistroContent(
                 }
             }
         }
-    }
-}
-
-@Preview(showBackground = true, showSystemUi = true)
-@Composable
-private fun RegistroScreenPreview() {
-    MaterialTheme {
-        RegistroContent(
-            state = RegistroState(
-                nombre = "",
-                apellido = "",
-                email = "",
-                telefono = "",
-                password = "",
-                confirmarPassword = "",
-                aceptaTerminos = false,
-                isLoading = false,
-                error = null
-            ),
-            onNombreChanged = {},
-            onApellidoChanged = {},
-            onEmailChanged = {},
-            onTelefonoChanged = {},
-            onPasswordChanged = {},
-            onConfirmarPasswordChanged = {},
-            onTerminosChanged = {},
-            onRegistrarClicked = {},
-            onBackToLogin = {},
-            onClearError = {}
-        )
     }
 }

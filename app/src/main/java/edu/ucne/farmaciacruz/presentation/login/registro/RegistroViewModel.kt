@@ -4,43 +4,39 @@ import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import edu.ucne.farmaciacruz.data.local.PreferencesManager
-import edu.ucne.farmaciacruz.data.remote.api.ApiService
-import edu.ucne.farmaciacruz.data.remote.request.RegisterRequest
-import edu.ucne.farmaciacruz.domain.model.User
-import kotlinx.coroutines.channels.Channel
+import edu.ucne.farmaciacruz.domain.model.Resource
+import edu.ucne.farmaciacruz.domain.usecase.registro.RegisterUseCase
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-import kotlin.compareTo
 
 @HiltViewModel
 class RegistroViewModel @Inject constructor(
-    private val apiService: ApiService,
-    private val preferencesManager: PreferencesManager
+    private val registerUseCase: RegisterUseCase
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(RegistroState())
     val state: StateFlow<RegistroState> = _state.asStateFlow()
 
-    private val _event = Channel<RegistroEvent>(Channel.BUFFERED)
-    val event = _event.receiveAsFlow()
+    private val _uiEvent = MutableSharedFlow<RegistroUiEvent>()
+    val uiEvent = _uiEvent.asSharedFlow()
 
-    fun processIntent(intent: RegistroIntent) {
-        when (intent) {
-            is RegistroIntent.NombreChanged -> handleNombreChanged(intent.nombre)
-            is RegistroIntent.ApellidoChanged -> handleApellidoChanged(intent.apellido)
-            is RegistroIntent.EmailChanged -> handleEmailChanged(intent.email)
-            is RegistroIntent.TelefonoChanged -> handleTelefonoChanged(intent.telefono)
-            is RegistroIntent.PasswordChanged -> handlePasswordChanged(intent.password)
-            is RegistroIntent.ConfirmarPasswordChanged -> handleConfirmarPasswordChanged(intent.confirmarPassword)
-            is RegistroIntent.TerminosChanged -> handleTerminosChanged(intent.aceptado)
-            is RegistroIntent.RegistrarClicked -> handleRegistrar()
-            is RegistroIntent.ClearError -> handleClearError()
+    fun onEvent(event: RegistroEvent) {
+        when (event) {
+            is RegistroEvent.NombreChanged -> handleNombreChanged(event.nombre)
+            is RegistroEvent.ApellidoChanged -> handleApellidoChanged(event.apellido)
+            is RegistroEvent.EmailChanged -> handleEmailChanged(event.email)
+            is RegistroEvent.TelefonoChanged -> handleTelefonoChanged(event.telefono)
+            is RegistroEvent.PasswordChanged -> handlePasswordChanged(event.password)
+            is RegistroEvent.ConfirmarPasswordChanged -> handleConfirmarPasswordChanged(event.confirmarPassword)
+            is RegistroEvent.TerminosChanged -> handleTerminosChanged(event.aceptado)
+            is RegistroEvent.RegistrarClicked -> handleRegistrar()
+            is RegistroEvent.ClearError -> handleClearError()
         }
     }
 
@@ -75,7 +71,6 @@ class RegistroViewModel @Inject constructor(
     private fun handleRegistrar() {
         val currentState = _state.value
 
-        // Validaciones
         if (currentState.nombre.isBlank()) {
             _state.update { it.copy(error = "El nombre es obligatorio") }
             return
@@ -117,64 +112,38 @@ class RegistroViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            try {
-                _state.update { it.copy(isLoading = true, error = null) }
-
-                val request = RegisterRequest(
-                    email = currentState.email,
-                    password = currentState.password,
-                    nombre = currentState.nombre,
-                    apellido = currentState.apellido,
-                    telefono = currentState.telefono.ifBlank { null }
-                )
-
-                val response = apiService.register(request)
-
-                if (response.isSuccessful && response.body() != null) {
-                    val authResponse = response.body()!!.data!!
-
-                    preferencesManager.saveToken(authResponse.token)
-                    preferencesManager.saveRefreshToken(authResponse.refreshToken)
-
-                    preferencesManager.saveUserData(
-                        userId = authResponse.usuario.usuarioId,
-                        email = authResponse.usuario.email,
-                        name = "${authResponse.usuario.nombre} ${authResponse.usuario.apellido}",
-                        role = authResponse.usuario.rol
-                    )
-
-                    val user = User(
-                        id = authResponse.usuario.usuarioId,
-                        email = authResponse.usuario.email,
-                        nombre = authResponse.usuario.nombre,
-                        apellido = authResponse.usuario.apellido,
-                        telefono = authResponse.usuario.telefono,
-                        rol = authResponse.usuario.rol
-                    )
-
-                    _state.update {
-                        it.copy(
-                            isLoading = false,
-                            user = user,
-                            error = null
-                        )
+            registerUseCase(
+                email = currentState.email,
+                password = currentState.password,
+                nombre = currentState.nombre,
+                apellido = currentState.apellido,
+                telefono = currentState.telefono.ifBlank { null }
+            ).collect { result ->
+                when (result) {
+                    is Resource.Loading -> {
+                        _state.update { it.copy(isLoading = true, error = null) }
                     }
 
-                    _event.send(RegistroEvent.ShowSuccess("Registro exitoso"))
-                    _event.send(RegistroEvent.NavigateToHome)
-                } else {
-                    val errorMessage = when (response.code()) {
-                        400 -> "Datos inválidos"
-                        409 -> "El email ya está registrado"
-                        else -> response.body()?.mensaje ?: "Error al registrarse"
+                    is Resource.Success -> {
+                        _state.update {
+                            it.copy(
+                                isLoading = false,
+                                user = result.data,
+                                error = null
+                            )
+                        }
+                        _uiEvent.emit(RegistroUiEvent.NavigateToHome)
                     }
-                    _state.update { it.copy(isLoading = false, error = errorMessage) }
-                    _event.send(RegistroEvent.ShowError(errorMessage))
+
+                    is Resource.Error -> {
+                        _state.update {
+                            it.copy(
+                                isLoading = false,
+                                error = result.message
+                            )
+                        }
+                    }
                 }
-            } catch (e: Exception) {
-                val errorMessage = "Error de conexión. Verifica tu internet"
-                _state.update { it.copy(isLoading = false, error = errorMessage) }
-                _event.send(RegistroEvent.ShowError(errorMessage))
             }
         }
     }
