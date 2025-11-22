@@ -13,6 +13,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+
+sealed class ConfiguracionUiEvent {
+    data class ShowError(val message: String) : ConfiguracionUiEvent()
+    data class ShowSuccess(val message: String) : ConfiguracionUiEvent()
+    data object NavigateToLogin : ConfiguracionUiEvent()
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -21,28 +28,28 @@ fun ConfiguracionScreen(
     onLogout: () -> Unit,
     viewModel: ConfiguracionViewModel = hiltViewModel()
 ) {
-    val state by viewModel.state.collectAsState()
+    val state by viewModel.state.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
     var showApiDialog by remember { mutableStateOf(false) }
     var tempApiUrl by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
-        viewModel.event.collect { event ->
+        viewModel.uiEvent.collect { event ->
             when (event) {
-                is ConfiguracionEvent.ShowError -> {
+                is ConfiguracionUiEvent.ShowError -> {
                     snackbarHostState.showSnackbar(
                         message = event.message,
                         duration = SnackbarDuration.Short
                     )
                 }
-                is ConfiguracionEvent.ShowSuccess -> {
+                is ConfiguracionUiEvent.ShowSuccess -> {
                     snackbarHostState.showSnackbar(
                         message = event.message,
                         duration = SnackbarDuration.Short
                     )
                 }
-                is ConfiguracionEvent.NavigateToLogin -> {
+                is ConfiguracionUiEvent.NavigateToLogin -> {
                     onLogout()
                 }
             }
@@ -219,7 +226,7 @@ fun ConfiguracionScreen(
                             Switch(
                                 checked = state.isDarkTheme,
                                 onCheckedChange = {
-                                    viewModel.processIntent(ConfiguracionIntent.ThemeToggled)
+                                    viewModel.onEvent(ConfiguracionEvent.ThemeToggled)
                                 }
                             )
                         }
@@ -237,7 +244,7 @@ fun ConfiguracionScreen(
                     ),
                     elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
                     onClick = {
-                        viewModel.processIntent(ConfiguracionIntent.ShowLogoutDialog)
+                        viewModel.onEvent(ConfiguracionEvent.ShowLogoutDialog)
                     }
                 ) {
                     ListItem(
@@ -333,9 +340,7 @@ fun ConfiguracionScreen(
             confirmButton = {
                 Button(
                     onClick = {
-                        viewModel.processIntent(
-                            ConfiguracionIntent.ApiUrlChanged(tempApiUrl)
-                        )
+                        viewModel.onEvent(ConfiguracionEvent.ApiUrlChanged(tempApiUrl))
                         showApiDialog = false
                     },
                     enabled = tempApiUrl.isNotBlank()
@@ -354,7 +359,7 @@ fun ConfiguracionScreen(
     if (state.showLogoutDialog) {
         AlertDialog(
             onDismissRequest = {
-                viewModel.processIntent(ConfiguracionIntent.DismissLogoutDialog)
+                viewModel.onEvent(ConfiguracionEvent.DismissLogoutDialog)
             },
             icon = {
                 Icon(
@@ -373,7 +378,7 @@ fun ConfiguracionScreen(
             confirmButton = {
                 Button(
                     onClick = {
-                        viewModel.processIntent(ConfiguracionIntent.Logout)
+                        viewModel.onEvent(ConfiguracionEvent.Logout)
                     },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.error
@@ -394,7 +399,7 @@ fun ConfiguracionScreen(
             dismissButton = {
                 TextButton(
                     onClick = {
-                        viewModel.processIntent(ConfiguracionIntent.DismissLogoutDialog)
+                        viewModel.onEvent(ConfiguracionEvent.DismissLogoutDialog)
                     },
                     enabled = !state.isLoading
                 ) {

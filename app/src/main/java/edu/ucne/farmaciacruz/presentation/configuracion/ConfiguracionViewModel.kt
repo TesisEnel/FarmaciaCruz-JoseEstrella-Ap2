@@ -6,11 +6,11 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import edu.ucne.farmaciacruz.data.local.PreferencesManager
 import edu.ucne.farmaciacruz.domain.usecase.login.GetCurrentUserUseCase
 import edu.ucne.farmaciacruz.domain.usecase.login.LogoutUseCase
-import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -25,23 +25,23 @@ class ConfiguracionViewModel @Inject constructor(
     private val _state = MutableStateFlow(ConfiguracionState())
     val state: StateFlow<ConfiguracionState> = _state.asStateFlow()
 
-    private val _event = Channel<ConfiguracionEvent>(Channel.BUFFERED)
-    val event = _event.receiveAsFlow()
+    private val _uiEvent = MutableSharedFlow<ConfiguracionUiEvent>()
+    val uiEvent = _uiEvent.asSharedFlow()
 
     init {
-        processIntent(ConfiguracionIntent.LoadUserData)
-        processIntent(ConfiguracionIntent.LoadPreferences)
+        onEvent(ConfiguracionEvent.LoadUserData)
+        onEvent(ConfiguracionEvent.LoadPreferences)
     }
 
-    fun processIntent(intent: ConfiguracionIntent) {
-        when (intent) {
-            is ConfiguracionIntent.LoadUserData -> handleLoadUserData()
-            is ConfiguracionIntent.LoadPreferences -> handleLoadPreferences()
-            is ConfiguracionIntent.ApiUrlChanged -> handleApiUrlChanged(intent.newUrl)
-            is ConfiguracionIntent.ThemeToggled -> handleThemeToggled()
-            is ConfiguracionIntent.ShowLogoutDialog -> handleShowLogoutDialog()
-            is ConfiguracionIntent.DismissLogoutDialog -> handleDismissLogoutDialog()
-            is ConfiguracionIntent.Logout -> handleLogout()
+    fun onEvent(event: ConfiguracionEvent) {
+        when (event) {
+            is ConfiguracionEvent.LoadUserData -> handleLoadUserData()
+            is ConfiguracionEvent.LoadPreferences -> handleLoadPreferences()
+            is ConfiguracionEvent.ApiUrlChanged -> handleApiUrlChanged(event.newUrl)
+            is ConfiguracionEvent.ThemeToggled -> handleThemeToggled()
+            is ConfiguracionEvent.ShowLogoutDialog -> handleShowLogoutDialog()
+            is ConfiguracionEvent.DismissLogoutDialog -> handleDismissLogoutDialog()
+            is ConfiguracionEvent.Logout -> handleLogout()
         }
     }
 
@@ -53,7 +53,7 @@ class ConfiguracionViewModel @Inject constructor(
                 }
             } catch (e: Exception) {
                 _state.update { it.copy(error = e.message) }
-                _event.send(ConfiguracionEvent.ShowError(e.message ?: "Error al cargar usuario"))
+                _uiEvent.emit(ConfiguracionUiEvent.ShowError(e.message ?: "Error al cargar usuario"))
             }
         }
     }
@@ -65,7 +65,7 @@ class ConfiguracionViewModel @Inject constructor(
                     _state.update { it.copy(apiUrl = url) }
                 }
             } catch (e: Exception) {
-                _event.send(ConfiguracionEvent.ShowError("Error al cargar preferencias"))
+                _uiEvent.emit(ConfiguracionUiEvent.ShowError("Error al cargar preferencias"))
             }
         }
         viewModelScope.launch {
@@ -74,7 +74,7 @@ class ConfiguracionViewModel @Inject constructor(
                     _state.update { it.copy(isDarkTheme = isDark) }
                 }
             } catch (e: Exception) {
-                _event.send(ConfiguracionEvent.ShowError("Error al cargar tema"))
+                _uiEvent.emit(ConfiguracionUiEvent.ShowError("Error al cargar tema"))
             }
         }
     }
@@ -84,9 +84,9 @@ class ConfiguracionViewModel @Inject constructor(
             try {
                 preferencesManager.saveApiUrl(newUrl)
                 _state.update { it.copy(apiUrl = newUrl) }
-                _event.send(ConfiguracionEvent.ShowSuccess("URL de API actualizada"))
+                _uiEvent.emit(ConfiguracionUiEvent.ShowSuccess("URL de API actualizada"))
             } catch (e: Exception) {
-                _event.send(ConfiguracionEvent.ShowError("Error al guardar URL"))
+                _uiEvent.emit(ConfiguracionUiEvent.ShowError("Error al guardar URL"))
             }
         }
     }
@@ -99,9 +99,9 @@ class ConfiguracionViewModel @Inject constructor(
                 _state.update { it.copy(isDarkTheme = newTheme) }
 
                 val message = if (newTheme) "Tema oscuro activado" else "Tema claro activado"
-                _event.send(ConfiguracionEvent.ShowSuccess(message))
+                _uiEvent.emit(ConfiguracionUiEvent.ShowSuccess(message))
             } catch (e: Exception) {
-                _event.send(ConfiguracionEvent.ShowError("Error al cambiar tema"))
+                _uiEvent.emit(ConfiguracionUiEvent.ShowError("Error al cambiar tema"))
             }
         }
     }
@@ -128,10 +128,10 @@ class ConfiguracionViewModel @Inject constructor(
                     )
                 }
 
-                _event.send(ConfiguracionEvent.NavigateToLogin)
+                _uiEvent.emit(ConfiguracionUiEvent.NavigateToLogin)
             } catch (e: Exception) {
                 _state.update { it.copy(isLoading = false) }
-                _event.send(ConfiguracionEvent.ShowError("Error al cerrar sesión"))
+                _uiEvent.emit(ConfiguracionUiEvent.ShowError("Error al cerrar sesión"))
             }
         }
     }
