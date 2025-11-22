@@ -17,16 +17,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import edu.ucne.farmaciacruz.presentation.login.LoginIntent.*
-import edu.ucne.farmaciacruz.presentation.login.LoginEvent.*
-import edu.ucne.farmaciacruz.ui.theme.onPrimaryContainerDarkHighContrast
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import edu.ucne.farmaciacruz.R
+import edu.ucne.farmaciacruz.ui.theme.onPrimaryContainerDarkHighContrast
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(
     onLoginSuccess: () -> Unit,
@@ -34,45 +31,35 @@ fun LoginScreen(
     onOlvidoPasswordClick: () -> Unit = {},
     viewModel: LoginViewModel = hiltViewModel()
 ) {
-    val state by viewModel.state.collectAsState()
+    val state by viewModel.state.collectAsStateWithLifecycle()
     var passwordVisible by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
-        viewModel.event.collect { event ->
+        viewModel.uiEvent.collect { event ->
             when (event) {
-                is NavigateToHome -> onLoginSuccess()
-                is ShowError -> {}
+                is LoginUiEvent.NavigateToHome -> onLoginSuccess()
             }
         }
     }
 
     LoginScreenContent(
         state = state,
-        isLoading = state.isLoading,
         passwordVisible = passwordVisible,
         onPasswordVisibilityChange = { passwordVisible = !passwordVisible },
-        onEmailChange = { viewModel.processIntent(EmailChanged(it)) },
-        onPasswordChange = { viewModel.processIntent(PasswordChanged(it)) },
-        onLoginClick = { viewModel.processIntent(LoginClicked) },
+        onEvent = viewModel::onEvent,
         onRegistroClick = onRegistroClick,
-        onOlvidoPasswordClick = onOlvidoPasswordClick,
-        onClearError = { viewModel.processIntent(ClearError) }
+        onOlvidoPasswordClick = onOlvidoPasswordClick
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreenContent(
     state: LoginState,
-    isLoading: Boolean,
     passwordVisible: Boolean,
     onPasswordVisibilityChange: () -> Unit,
-    onEmailChange: (String) -> Unit,
-    onPasswordChange: (String) -> Unit,
-    onLoginClick: () -> Unit,
+    onEvent: (LoginEvent) -> Unit,
     onRegistroClick: () -> Unit,
-    onOlvidoPasswordClick: () -> Unit,
-    onClearError: () -> Unit
+    onOlvidoPasswordClick: () -> Unit
 ) {
     Box(
         modifier = Modifier
@@ -92,7 +79,6 @@ fun LoginScreenContent(
                 modifier = Modifier
                     .size(250.dp)
                     .align(Alignment.CenterHorizontally)
-
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -122,7 +108,6 @@ fun LoginScreenContent(
                         .fillMaxWidth()
                         .padding(28.dp)
                 ) {
-
                     Text(
                         text = "Iniciar Sesión",
                         style = MaterialTheme.typography.titleLarge,
@@ -145,7 +130,7 @@ fun LoginScreenContent(
 
                     OutlinedTextField(
                         value = state.email,
-                        onValueChange = onEmailChange,
+                        onValueChange = { onEvent(LoginEvent.EmailChanged(it)) },
                         modifier = Modifier.fillMaxWidth(),
                         placeholder = {
                             Text(
@@ -158,7 +143,7 @@ fun LoginScreenContent(
                             keyboardType = KeyboardType.Email
                         ),
                         singleLine = true,
-                        enabled = !isLoading,
+                        enabled = !state.isLoading,
                         shape = RoundedCornerShape(8.dp)
                     )
 
@@ -176,7 +161,7 @@ fun LoginScreenContent(
 
                     OutlinedTextField(
                         value = state.password,
-                        onValueChange = onPasswordChange,
+                        onValueChange = { onEvent(LoginEvent.PasswordChanged(it)) },
                         modifier = Modifier.fillMaxWidth(),
                         placeholder = {
                             Text(
@@ -201,7 +186,7 @@ fun LoginScreenContent(
                             keyboardType = KeyboardType.Password
                         ),
                         singleLine = true,
-                        enabled = !isLoading,
+                        enabled = !state.isLoading,
                         shape = RoundedCornerShape(8.dp)
                     )
 
@@ -223,11 +208,11 @@ fun LoginScreenContent(
                     Spacer(modifier = Modifier.height(16.dp))
 
                     Button(
-                        onClick = onLoginClick,
+                        onClick = { onEvent(LoginEvent.LoginClicked) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(50.dp),
-                        enabled = !isLoading
+                        enabled = !state.isLoading
                                 && state.email.isNotBlank()
                                 && state.password.isNotBlank(),
                         shape = RoundedCornerShape(8.dp),
@@ -236,7 +221,7 @@ fun LoginScreenContent(
                             disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
                         )
                     ) {
-                        if (isLoading) {
+                        if (state.isLoading) {
                             CircularProgressIndicator(
                                 modifier = Modifier.size(24.dp),
                                 color = MaterialTheme.colorScheme.onPrimary,
@@ -282,7 +267,7 @@ fun LoginScreenContent(
                 }
             }
 
-            if (state.error != null) {
+            state.error?.let { error ->
                 Spacer(modifier = Modifier.height(16.dp))
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -299,13 +284,13 @@ fun LoginScreenContent(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = state.error!!,
+                            text = error,
                             color = MaterialTheme.colorScheme.onErrorContainer,
                             style = MaterialTheme.typography.bodyMedium,
                             modifier = Modifier.weight(1f)
                         )
                         IconButton(
-                            onClick = onClearError,
+                            onClick = { onEvent(LoginEvent.ClearError) },
                             modifier = Modifier.size(20.dp)
                         ) {
                             Text(
@@ -317,31 +302,5 @@ fun LoginScreenContent(
                 }
             }
         }
-    }
-}
-
-@Preview(showBackground = true, showSystemUi = true)
-@Composable
-fun LoginScreenPreview() {
-    val previewState = LoginState(
-        email = "example@email.com",
-        password = "123456",
-        isLoading = false,
-        error = null
-    )
-
-    MaterialTheme {
-        LoginScreenContent(
-            state = previewState,
-            isLoading = false,
-            passwordVisible = false,
-            onPasswordVisibilityChange = {},
-            onEmailChange = {},
-            onPasswordChange = {},
-            onLoginClick = {},
-            onRegistroClick = {},
-            onOlvidoPasswordClick = {},
-            onClearError = {}
-        )
     }
 }

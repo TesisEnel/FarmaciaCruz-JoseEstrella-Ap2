@@ -1,10 +1,11 @@
 package edu.ucne.farmaciacruz.domain.usecase.login
 
-
+import android.util.Patterns
 import edu.ucne.farmaciacruz.data.repository.AuthRepositoryImpl
 import edu.ucne.farmaciacruz.domain.model.Resource
 import edu.ucne.farmaciacruz.domain.model.User
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import javax.inject.Inject
 
 class LoginUseCase @Inject constructor(
@@ -12,25 +13,25 @@ class LoginUseCase @Inject constructor(
 ) {
     suspend operator fun invoke(email: String, password: String): Flow<Resource<User>> {
         if (email.isBlank()) {
-            return kotlinx.coroutines.flow.flow {
+            return flow {
                 emit(Resource.Error("El email es requerido"))
             }
         }
 
-        if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-            return kotlinx.coroutines.flow.flow {
+        if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            return flow {
                 emit(Resource.Error("Email inválido"))
             }
         }
 
         if (password.isBlank()) {
-            return kotlinx.coroutines.flow.flow {
+            return flow {
                 emit(Resource.Error("La contraseña es requerida"))
             }
         }
 
         if (password.length < 8) {
-            return kotlinx.coroutines.flow.flow {
+            return flow {
                 emit(Resource.Error("La contraseña debe tener al menos 8 caracteres"))
             }
         }

@@ -5,10 +5,18 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import edu.ucne.farmaciacruz.domain.model.Resource
 import edu.ucne.farmaciacruz.domain.usecase.login.LoginUseCase
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+
+sealed class LoginUiEvent {
+    data object NavigateToHome : LoginUiEvent()
+}
 
 @HiltViewModel
 class LoginViewModel @Inject constructor(
@@ -18,15 +26,15 @@ class LoginViewModel @Inject constructor(
     private val _state = MutableStateFlow(LoginState())
     val state: StateFlow<LoginState> = _state.asStateFlow()
 
-    private val _event = Channel<LoginEvent>(Channel.BUFFERED)
-    val event = _event.receiveAsFlow()
+    private val _uiEvent = MutableSharedFlow<LoginUiEvent>()
+    val uiEvent = _uiEvent.asSharedFlow()
 
-    fun processIntent(intent: LoginIntent) {
-        when (intent) {
-            is LoginIntent.EmailChanged -> handleEmailChanged(intent.email)
-            is LoginIntent.PasswordChanged -> handlePasswordChanged(intent.password)
-            is LoginIntent.LoginClicked -> handleLogin()
-            is LoginIntent.ClearError -> handleClearError()
+    fun onEvent(event: LoginEvent) {
+        when (event) {
+            is LoginEvent.EmailChanged -> handleEmailChanged(event.email)
+            is LoginEvent.PasswordChanged -> handlePasswordChanged(event.password)
+            is LoginEvent.LoginClicked -> handleLogin()
+            is LoginEvent.ClearError -> handleClearError()
         }
     }
 
@@ -56,7 +64,7 @@ class LoginViewModel @Inject constructor(
                                 error = null
                             )
                         }
-                        _event.send(LoginEvent.NavigateToHome)
+                        _uiEvent.emit(LoginUiEvent.NavigateToHome)
                     }
 
                     is Resource.Error -> {
@@ -66,7 +74,6 @@ class LoginViewModel @Inject constructor(
                                 error = result.message
                             )
                         }
-                        _event.send(LoginEvent.ShowError(result.message ?: "Error desconocido"))
                     }
                 }
             }
@@ -77,3 +84,4 @@ class LoginViewModel @Inject constructor(
         _state.update { it.copy(error = null) }
     }
 }
+
