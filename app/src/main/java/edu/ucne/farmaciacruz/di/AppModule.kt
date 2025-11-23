@@ -10,34 +10,27 @@ import edu.ucne.farmaciacruz.data.local.PreferencesManager
 import edu.ucne.farmaciacruz.data.remote.api.ApiService
 import edu.ucne.farmaciacruz.data.repository.AuthRepositoryImpl
 import edu.ucne.farmaciacruz.data.repository.ProductRepositoryImpl
+import edu.ucne.farmaciacruz.domain.repository.AuthRepository
+import edu.ucne.farmaciacruz.domain.repository.ProductRepository
 import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
 object AppModule {
 
-    @Provides
-    @Singleton
+    @Provides @Singleton
     fun providePreferencesManager(
         @ApplicationContext context: Context
-    ): PreferencesManager {
-        return PreferencesManager(context)
-    }
+    ): PreferencesManager = PreferencesManager(context)
 
-    @Provides
-    @Singleton
+    @Provides @Singleton
     fun provideAuthRepository(
         apiService: ApiService,
         preferencesManager: PreferencesManager
-    ): AuthRepositoryImpl {
-        return AuthRepositoryImpl(apiService, preferencesManager)
-    }
+    ): AuthRepository = AuthRepositoryImpl(apiService, preferencesManager)
 
-    @Provides
-    @Singleton
+    @Provides @Singleton
     fun provideProductRepository(
         apiService: ApiService
-    ): ProductRepositoryImpl {
-        return ProductRepositoryImpl(apiService)
-    }
+    ): ProductRepository = ProductRepositoryImpl(apiService)
 }
