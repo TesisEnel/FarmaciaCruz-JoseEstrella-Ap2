@@ -22,3 +22,12 @@ object ConfiguracionRoute
 
 @Serializable
 data class ProductoDetalleRoute(val productoId: Int)
+
+@Serializable
+object CheckoutRoute
+
+@Serializable
+object MisOrdenesRoute
+
+@Serializable
+data class OrdenDetalleRoute(val orderId: Int)
