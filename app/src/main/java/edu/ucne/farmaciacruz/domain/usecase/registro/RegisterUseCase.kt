@@ -1,13 +1,13 @@
 package edu.ucne.farmaciacruz.domain.usecase.registro
 
-import edu.ucne.farmaciacruz.data.repository.AuthRepositoryImpl
 import edu.ucne.farmaciacruz.domain.model.Resource
 import edu.ucne.farmaciacruz.domain.model.User
+import edu.ucne.farmaciacruz.domain.repository.AuthRepository
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 
 class RegisterUseCase @Inject constructor(
-    private val authRepository: AuthRepositoryImpl
+    private val authRepository: AuthRepository
 ) {
     suspend operator fun invoke(
         email: String,

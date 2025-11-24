@@ -16,4 +16,6 @@ interface AuthRepository {
         apellido: String,
         telefono: String?
     ): Flow<Resource<User>>
+
+    suspend fun recoveryPassword(email: String): Flow<Resource<Unit>>
 }

@@ -16,6 +16,7 @@ import edu.ucne.farmaciacruz.presentation.login.LoginScreen
 import edu.ucne.farmaciacruz.presentation.login.recoverypassword.RecuperarPasswordScreen
 import edu.ucne.farmaciacruz.presentation.login.registro.RegistroScreen
 import edu.ucne.farmaciacruz.presentation.producto.ProductosScreen
+import edu.ucne.farmaciacruz.presentation.producto.detalle.ProductoDetalleScreen
 
 @Composable
 fun AppNavigation(
@@ -80,6 +81,11 @@ fun AppNavigation(
 
         composable<ProductoDetalleRoute> { backStackEntry ->
             val args = backStackEntry.toRoute<ProductoDetalleRoute>()
+            ProductoDetalleScreen(
+                onBack = {
+                    navController.popBackStack()
+                }
+            )
         }
 
         composable<RegistroRoute> {

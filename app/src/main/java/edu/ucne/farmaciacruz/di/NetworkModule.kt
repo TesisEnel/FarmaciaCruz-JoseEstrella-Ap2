@@ -5,8 +5,13 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import edu.ucne.farmaciacruz.data.local.PreferencesManager
+import edu.ucne.farmaciacruz.data.local.dao.CarritoDao
 import edu.ucne.farmaciacruz.data.remote.api.ApiService
 import edu.ucne.farmaciacruz.data.remote.api.AuthInterceptor
+import edu.ucne.farmaciacruz.data.repository.CarritoRepositoryImpl
+import edu.ucne.farmaciacruz.data.repository.PreferencesRepositoryImpl
+import edu.ucne.farmaciacruz.domain.repository.CarritoRepository
+import edu.ucne.farmaciacruz.domain.repository.PreferencesRepository
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import okhttp3.OkHttpClient
@@ -65,4 +70,18 @@ object NetworkModule {
     fun provideApiService(retrofit: Retrofit): ApiService {
         return retrofit.create(ApiService::class.java)
     }
+
+    @Provides
+    @Singleton
+    fun provideCarritoRepository(
+        carritoDao: CarritoDao
+    ): CarritoRepository {
+        return CarritoRepositoryImpl(carritoDao)
+    }
+
+    @Provides
+    @Singleton
+    fun providePreferencesRepository(
+        prefs: PreferencesManager
+    ): PreferencesRepository = PreferencesRepositoryImpl(prefs)
 }

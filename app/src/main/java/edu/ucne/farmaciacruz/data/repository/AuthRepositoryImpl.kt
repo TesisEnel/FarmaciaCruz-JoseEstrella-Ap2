@@ -3,11 +3,13 @@ package edu.ucne.farmaciacruz.data.repository
 import edu.ucne.farmaciacruz.data.local.PreferencesManager
 import edu.ucne.farmaciacruz.data.remote.api.ApiService
 import edu.ucne.farmaciacruz.data.remote.request.LoginRequest
+import edu.ucne.farmaciacruz.data.remote.request.RecoveryRequest
 import edu.ucne.farmaciacruz.data.remote.request.RegisterRequest
 import edu.ucne.farmaciacruz.domain.model.Resource
 import edu.ucne.farmaciacruz.domain.model.User
 import edu.ucne.farmaciacruz.domain.repository.AuthRepository
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
 import retrofit2.HttpException
 import java.io.IOException
@@ -30,11 +32,9 @@ class AuthRepositoryImpl @Inject constructor(
             if (response.isSuccessful && response.body() != null) {
                 val authResponse = response.body()!!.data!!
 
-                // Guardar tokens
                 preferencesManager.saveToken(authResponse.token)
                 preferencesManager.saveRefreshToken(authResponse.refreshToken)
 
-                // Guardar datos del usuario
                 preferencesManager.saveUserData(
                     userId = authResponse.usuario.usuarioId,
                     email = authResponse.usuario.email,
@@ -93,11 +93,9 @@ class AuthRepositoryImpl @Inject constructor(
             if (response.isSuccessful && response.body() != null) {
                 val authResponse = response.body()!!.data!!
 
-                // Guardar tokens
                 preferencesManager.saveToken(authResponse.token)
                 preferencesManager.saveRefreshToken(authResponse.refreshToken)
 
-                // Guardar datos del usuario
                 preferencesManager.saveUserData(
                     userId = authResponse.usuario.usuarioId,
                     email = authResponse.usuario.email,
@@ -148,7 +146,6 @@ class AuthRepositoryImpl @Inject constructor(
         val name = preferencesManager.getUserName()
         val role = preferencesManager.getUserRole()
 
-        // Combinar flows
         userId.collect { id ->
             if (id != null) {
                 email.collect { mail ->
@@ -172,5 +169,30 @@ class AuthRepositoryImpl @Inject constructor(
                 emit(null)
             }
         }
+    }
+
+    override suspend fun recoveryPassword(email: String): Flow<Resource<Unit>> = flow {
+        emit(Resource.Loading())
+
+        val request = RecoveryRequest(email)
+
+        val response = apiService.RecoveryPassword(request)
+
+        if (response.isSuccessful) {
+
+            val body = response.body()
+
+            if (body?.data != null) {
+                emit(Resource.Success(Unit))
+            } else {
+                emit(Resource.Error(body?.mensaje ?: "No se pudo enviar el correo"))
+            }
+
+        } else {
+            emit(Resource.Error("Error HTTP ${response.code()}"))
+        }
+
+    }.catch {
+        emit(Resource.Error(it.message ?: "Error de conexión"))
     }
 }
