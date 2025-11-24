@@ -6,6 +6,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -33,6 +34,7 @@ import edu.ucne.farmaciacruz.ui.theme.FarmaciaCruzTheme
 fun ProductosScreen(
     onProductoClick: (Int) -> Unit,
     onConfigClick: () -> Unit,
+    onCheckoutClick: () -> Unit,
     viewModel: ProductosViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -65,6 +67,7 @@ fun ProductosScreen(
             },
             onProceedToCheckout = {
                 showCarritoSheet = false
+                onCheckoutClick()
             }
         )
     }
@@ -131,9 +134,7 @@ private fun ProductosScreenContent(
                             BadgedBox(
                                 badge = {
                                     if (cantidadCarrito > 0) {
-                                        Badge(
-                                            containerColor = MaterialTheme.colorScheme.error
-                                        ) {
+                                        Badge(containerColor = MaterialTheme.colorScheme.error) {
                                             Text(cantidadCarrito.toString())
                                         }
                                     }
@@ -159,9 +160,7 @@ private fun ProductosScreenContent(
                         value = state.searchQuery,
                         onValueChange = { onEvent(ProductosEvent.SearchQueryChanged(it)) },
                         modifier = Modifier.fillMaxWidth(),
-                        placeholder = {
-                            Text("Buscar productos…")
-                        },
+                        placeholder = { Text("Buscar productos…") },
                         leadingIcon = {
                             Icon(
                                 Icons.Outlined.Search,
@@ -197,27 +196,23 @@ private fun ProductosScreenContent(
             )
         }
     ) { paddingValues ->
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
                 .background(MaterialTheme.colorScheme.surface)
         ) {
+
             when {
                 state.isLoading -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
+                    Box(Modifier.fillMaxSize(), Alignment.Center) {
                         CircularProgressIndicator()
                     }
                 }
 
                 state.error != null -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
+                    Box(Modifier.fillMaxSize(), Alignment.Center) {
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -229,10 +224,7 @@ private fun ProductosScreenContent(
                                 modifier = Modifier.size(64.dp),
                                 tint = MaterialTheme.colorScheme.error
                             )
-                            Text(
-                                text = state.error,
-                                style = MaterialTheme.typography.bodyLarge
-                            )
+                            Text(state.error, style = MaterialTheme.typography.bodyLarge)
                             Button(onClick = { onEvent(ProductosEvent.LoadProductos) }) {
                                 Text("Reintentar")
                             }
@@ -241,10 +233,12 @@ private fun ProductosScreenContent(
                 }
 
                 else -> {
+
                     LazyColumn(
                         contentPadding = PaddingValues(16.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
+
                         item {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -271,23 +265,24 @@ private fun ProductosScreenContent(
                         if (state.categorias.isNotEmpty()) {
                             item {
                                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+
                                     Text(
-                                        text = "Categorías",
+                                        "Categorías",
                                         style = MaterialTheme.typography.titleMedium,
                                         fontWeight = FontWeight.SemiBold
                                     )
-
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
+                                    LazyRow(
                                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                                     ) {
-                                        FilterChip(
-                                            selected = state.selectedCategoria == null,
-                                            onClick = { onEvent(ProductosEvent.CategoriaSelected(null)) },
-                                            label = { Text("Todas") }
-                                        )
+                                        item {
+                                            FilterChip(
+                                                selected = state.selectedCategoria == null,
+                                                onClick = { onEvent(ProductosEvent.CategoriaSelected(null)) },
+                                                label = { Text("Todas") }
+                                            )
+                                        }
 
-                                        state.categorias.take(3).forEach { categoria ->
+                                        items(state.categorias) { categoria ->
                                             FilterChip(
                                                 selected = state.selectedCategoria == categoria,
                                                 onClick = { onEvent(ProductosEvent.CategoriaSelected(categoria)) },
@@ -306,12 +301,12 @@ private fun ProductosScreenContent(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = "Productos Disponibles",
+                                    "Productos Disponibles",
                                     style = MaterialTheme.typography.titleLarge,
                                     fontWeight = FontWeight.Bold
                                 )
                                 Text(
-                                    text = "${state.productosFiltrados.size} productos",
+                                    "${state.productosFiltrados.size} productos",
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -337,7 +332,7 @@ private fun ProductosScreenContent(
                                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                         Text(
-                                            text = "No se encontraron productos",
+                                            "No se encontraron productos",
                                             style = MaterialTheme.typography.bodyLarge,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
@@ -349,7 +344,9 @@ private fun ProductosScreenContent(
                                 ProductoCard(
                                     producto = producto,
                                     onClick = { onEvent(ProductosEvent.ProductoClicked(producto.id)) },
-                                    onAddToCart = { onEvent(ProductosEvent.AddToCart(producto)) }
+                                    onAddToCart = {
+                                        onEvent(ProductosEvent.AddToCart(producto))
+                                    }
                                 )
                             }
                         }
@@ -393,11 +390,7 @@ fun BottomBarItem(
 
     Column(
         modifier = Modifier
-            .clickable(
-                interactionSource = interaction,
-                indication = null,
-                onClick = onClick
-            )
+            .clickable(interactionSource = interaction, indication = null, onClick = onClick)
             .padding(8.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -410,7 +403,7 @@ fun BottomBarItem(
         )
 
         Text(
-            text = label,
+            label,
             style = MaterialTheme.typography.labelSmall,
             color = if (selected) MaterialTheme.colorScheme.primary
             else MaterialTheme.colorScheme.onSurfaceVariant
@@ -450,8 +443,9 @@ fun QuickAccessCard(
                     )
                 }
             }
+
             Text(
-                text = title,
+                title,
                 style = MaterialTheme.typography.bodySmall,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
@@ -477,6 +471,7 @@ fun ProductoCard(
                 .padding(12.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+
             Surface(
                 modifier = Modifier.size(80.dp),
                 shape = RoundedCornerShape(12.dp),
@@ -491,14 +486,12 @@ fun ProductoCard(
             }
 
             Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(vertical = 4.dp),
+                modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
                 Column {
                     Text(
-                        text = producto.nombre,
+                        producto.nombre,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
                         maxLines = 2,
@@ -506,7 +499,7 @@ fun ProductoCard(
                     )
 
                     Text(
-                        text = producto.descripcion,
+                        producto.descripcion,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
@@ -520,7 +513,7 @@ fun ProductoCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = producto.precioFormateado,
+                        producto.precioFormateado,
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
@@ -532,11 +525,8 @@ fun ProductoCard(
                             color = MaterialTheme.colorScheme.error
                         ) {
                             Text(
-                                text = "-15%",
-                                modifier = Modifier.padding(
-                                    horizontal = 8.dp,
-                                    vertical = 4.dp
-                                ),
+                                "-15%",
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onError
@@ -554,46 +544,19 @@ fun ProductoCard(
                     contentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 )
             ) {
-                Icon(
-                    Icons.Outlined.Add,
-                    contentDescription = "Agregar",
-                    modifier = Modifier.size(20.dp)
-                )
+                Icon(Icons.Outlined.Add, contentDescription = "Agregar", modifier = Modifier.size(20.dp))
             }
         }
     }
 }
 
-// ===== PREVIEWS =====
-
 @Preview(name = "Productos Screen - Light", showBackground = true)
 @Composable
 private fun ProductosScreenPreview() {
     val sampleProductos = listOf(
-        Producto(
-            id = 1,
-            nombre = "Paracetamol 500mg",
-            descripcion = "Analgésico y antipirético",
-            precio = 45.00,
-            imagenUrl = "",
-            categoria = "Medicamentos"
-        ),
-        Producto(
-            id = 2,
-            nombre = "Ibuprofeno 400mg",
-            descripcion = "Antiinflamatorio",
-            precio = 65.00,
-            imagenUrl = "",
-            categoria = "Medicamentos"
-        ),
-        Producto(
-            id = 3,
-            nombre = "Vitamina C 1000mg",
-            descripcion = "Suplemento vitamínico",
-            precio = 35.00,
-            imagenUrl = "",
-            categoria = "Vitaminas"
-        )
+        Producto(1, "Paracetamol 500mg", "Analgésico", "", 45.00, "Medicamentos"),
+        Producto(2, "Ibuprofeno 400mg", "Antiinflamatorio", "", 45.00, "Medicamentos"),
+        Producto(3, "Vitamina C 1000mg", "Suplemento", "", 45.00, "Vitaminas")
     )
 
     FarmaciaCruzTheme {
@@ -601,7 +564,7 @@ private fun ProductosScreenPreview() {
             state = ProductosState(
                 productos = sampleProductos,
                 productosFiltrados = sampleProductos,
-                categorias = listOf("Medicamentos", "Vitaminas"),
+                categorias = listOf("Medicamentos", "Vitaminas", "Suplementos", "Dermatología"),
                 selectedCategoria = null,
                 searchQuery = "",
                 isLoading = false,
@@ -620,22 +583,8 @@ private fun ProductosScreenPreview() {
 @Composable
 private fun ProductosScreenPreviewDark() {
     val sampleProductos = listOf(
-        Producto(
-            id = 1,
-            nombre = "Paracetamol 500mg",
-            descripcion = "Analgésico y antipirético",
-            precio = 45.00,
-            imagenUrl = "",
-            categoria = "Medicamentos"
-        ),
-        Producto(
-            id = 2,
-            nombre = "Ibuprofeno 400mg",
-            descripcion = "Antiinflamatorio",
-            precio = 65.00,
-            imagenUrl = "",
-            categoria = "Medicamentos"
-        )
+        Producto(1, "Paracetamol 500mg", "Analgésico", "", 234.3, "Medicamentos"),
+        Producto(2, "Ibuprofeno 400mg", "Antiinflamatorio", "", 65.00, "Medicamentos")
     )
 
     FarmaciaCruzTheme(darkTheme = true) {
@@ -643,28 +592,11 @@ private fun ProductosScreenPreviewDark() {
             state = ProductosState(
                 productos = sampleProductos,
                 productosFiltrados = sampleProductos,
-                categorias = listOf("Medicamentos", "Vitaminas"),
+                categorias = listOf("Medicamentos", "Vitaminas", "Dermatología"),
                 selectedCategoria = null,
                 searchQuery = "",
                 isLoading = false,
                 error = null
-            ),
-            snackbarHostState = remember { SnackbarHostState() },
-            cantidadCarrito = 0,
-            onEvent = {},
-            onCarritoClick = {},
-            onConfigClick = {}
-        )
-    }
-}
-
-@Preview(name = "Productos Screen - Loading", showBackground = true)
-@Composable
-private fun ProductosScreenLoadingPreview() {
-    FarmaciaCruzTheme {
-        ProductosScreenContent(
-            state = ProductosState(
-                isLoading = true
             ),
             snackbarHostState = remember { SnackbarHostState() },
             cantidadCarrito = 0,

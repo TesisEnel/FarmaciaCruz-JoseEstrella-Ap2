@@ -18,6 +18,12 @@ android {
         versionCode = 1
         versionName = "1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+
+        buildConfigField("String", "PAYPAL_CLIENT_ID", "\"AYBtdbZRwfmBlah0wvGtyI78rtR0uULNCOgPZccISxR-Jg0mIhq_o2IRKJ-dJtrik3vRzbMobzbinegp\"")
+        buildConfigField("String", "PAYPAL_SECRET", "\"EGxIxNtp7ILftrrb8B2S0-qDvyhhIR5ORSrVWV3l2yaaq39IaihXtXBmpX-6EUH1nN-_Z27Yg9pitTDU\"")
+        buildConfigField("String", "PAYPAL_ENVIRONMENT", "\"sandbox\"")
+        buildConfigField("String", "PAYPAL_API_URL", "\"https://api-m.sandbox.paypal.com\"")
     }
 
     buildTypes {
@@ -41,6 +47,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -88,6 +95,7 @@ dependencies {
     implementation("com.squareup.retrofit2:converter-moshi:2.9.0")
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+
 
     // Testing
     testImplementation(libs.junit)

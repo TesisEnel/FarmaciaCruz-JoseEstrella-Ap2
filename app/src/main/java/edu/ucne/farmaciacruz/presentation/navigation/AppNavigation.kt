@@ -11,10 +11,12 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import edu.ucne.farmaciacruz.data.local.PreferencesManager
+import edu.ucne.farmaciacruz.presentation.checkout.CheckoutScreen
 import edu.ucne.farmaciacruz.presentation.configuracion.ConfiguracionScreen
 import edu.ucne.farmaciacruz.presentation.login.LoginScreen
 import edu.ucne.farmaciacruz.presentation.login.recoverypassword.RecuperarPasswordScreen
 import edu.ucne.farmaciacruz.presentation.login.registro.RegistroScreen
+import edu.ucne.farmaciacruz.presentation.ordenes.MisOrdenesScreen
 import edu.ucne.farmaciacruz.presentation.producto.ProductosScreen
 import edu.ucne.farmaciacruz.presentation.producto.detalle.ProductoDetalleScreen
 
@@ -62,6 +64,33 @@ fun AppNavigation(
                 },
                 onConfigClick = {
                     navController.navigate(ConfiguracionRoute)
+                },
+                onCheckoutClick = {
+                    navController.navigate(CheckoutRoute)
+                }
+            )
+        }
+
+        composable<CheckoutRoute> {
+            CheckoutScreen(
+                onBack = {
+                    navController.popBackStack()
+                },
+                onNavigateToOrders = {
+                    navController.navigate(MisOrdenesRoute) {
+                        popUpTo(ProductosRoute)
+                    }
+                }
+            )
+        }
+
+        composable<MisOrdenesRoute> {
+            MisOrdenesScreen(
+                onBack = {
+                    navController.popBackStack()
+                },
+                onOrderClick = { orderId ->
+                    navController.navigate(OrdenDetalleRoute(orderId))
                 }
             )
         }
