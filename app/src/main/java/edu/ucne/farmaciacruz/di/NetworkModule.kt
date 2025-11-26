@@ -9,9 +9,9 @@ import dagger.hilt.components.SingletonComponent
 import edu.ucne.farmaciacruz.BuildConfig
 import edu.ucne.farmaciacruz.data.local.PreferencesManager
 import edu.ucne.farmaciacruz.data.local.dao.CarritoDao
-import edu.ucne.farmaciacruz.data.remote.api.ApiService
-import edu.ucne.farmaciacruz.data.remote.api.AuthInterceptor
-import edu.ucne.farmaciacruz.data.remote.api.PayPalApiService
+import edu.ucne.farmaciacruz.data.remote.ApiService
+import edu.ucne.farmaciacruz.data.remote.AuthInterceptor
+import edu.ucne.farmaciacruz.data.remote.PayPalApiService
 import edu.ucne.farmaciacruz.data.repository.CarritoRepositoryImpl
 import edu.ucne.farmaciacruz.data.repository.PreferencesRepositoryImpl
 import edu.ucne.farmaciacruz.domain.repository.CarritoRepository

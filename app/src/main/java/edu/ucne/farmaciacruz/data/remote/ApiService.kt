@@ -1,25 +1,25 @@
-package edu.ucne.farmaciacruz.data.remote.api
+package edu.ucne.farmaciacruz.data.remote
 
 import edu.ucne.farmaciacruz.data.remote.dto.AuthResponseDto
+import edu.ucne.farmaciacruz.data.remote.dto.ChangePasswordRequest
 import edu.ucne.farmaciacruz.data.remote.dto.CreateOrderDto
+import edu.ucne.farmaciacruz.data.remote.dto.CreateProductoRequest
+import edu.ucne.farmaciacruz.data.remote.dto.LoginRequest
 import edu.ucne.farmaciacruz.data.remote.dto.OrderResponseDto
 import edu.ucne.farmaciacruz.data.remote.dto.ProductoDto
+import edu.ucne.farmaciacruz.data.remote.dto.RecoveryRequest
+import edu.ucne.farmaciacruz.data.remote.dto.RefreshTokenRequest
+import edu.ucne.farmaciacruz.data.remote.dto.RegisterRequest
+import edu.ucne.farmaciacruz.data.remote.dto.UpdateOrderStatusRequest
+import edu.ucne.farmaciacruz.data.remote.dto.UpdateProfileRequest
 import edu.ucne.farmaciacruz.data.remote.dto.UsuarioDto
-import edu.ucne.farmaciacruz.data.remote.request.ChangePasswordRequest
-import edu.ucne.farmaciacruz.data.remote.request.CreateProductoRequest
-import edu.ucne.farmaciacruz.data.remote.request.LoginRequest
-import edu.ucne.farmaciacruz.data.remote.request.RecoveryRequest
-import edu.ucne.farmaciacruz.data.remote.request.RefreshTokenRequest
-import edu.ucne.farmaciacruz.data.remote.request.RegisterRequest
-import edu.ucne.farmaciacruz.data.remote.request.UpdateOrderStatusRequest
-import edu.ucne.farmaciacruz.data.remote.request.UpdateProfileRequest
+import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.Path
-import retrofit2.Response
 
 interface ApiService {
 

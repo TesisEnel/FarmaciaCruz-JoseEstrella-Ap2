@@ -1,8 +1,8 @@
 package edu.ucne.farmaciacruz.data.repository
 
-import edu.ucne.farmaciacruz.data.remote.api.ApiService
+import edu.ucne.farmaciacruz.data.remote.ApiService
 import edu.ucne.farmaciacruz.data.remote.dto.ProductoDto
-import edu.ucne.farmaciacruz.data.remote.request.CreateProductoRequest
+import edu.ucne.farmaciacruz.data.remote.dto.CreateProductoRequest
 import edu.ucne.farmaciacruz.domain.model.Producto
 import edu.ucne.farmaciacruz.domain.model.Resource
 import edu.ucne.farmaciacruz.domain.repository.ProductRepository

@@ -5,15 +5,14 @@ import android.util.Log
 import edu.ucne.farmaciacruz.BuildConfig
 import edu.ucne.farmaciacruz.data.local.dao.PaymentOrderDao
 import edu.ucne.farmaciacruz.data.local.entity.PaymentOrderEntity
-import edu.ucne.farmaciacruz.data.remote.api.PayPalApiService
-import edu.ucne.farmaciacruz.data.remote.dto.*
+import edu.ucne.farmaciacruz.data.remote.PayPalApiService
 import edu.ucne.farmaciacruz.domain.model.*
 import edu.ucne.farmaciacruz.domain.repository.PaymentRepository
 import com.google.gson.Gson
 import edu.ucne.farmaciacruz.data.remote.dto.paypal.Amount
 import edu.ucne.farmaciacruz.data.remote.dto.paypal.ApplicationContext
 import edu.ucne.farmaciacruz.data.remote.dto.paypal.PurchaseUnit
-import edu.ucne.farmaciacruz.data.remote.request.paypal.PayPalOrderRequest
+import edu.ucne.farmaciacruz.data.remote.dto.paypal.PayPalOrderRequest
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map

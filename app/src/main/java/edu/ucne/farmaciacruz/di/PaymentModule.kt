@@ -6,7 +6,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import edu.ucne.farmaciacruz.data.local.dao.PaymentOrderDao
-import edu.ucne.farmaciacruz.data.remote.api.PayPalApiService
+import edu.ucne.farmaciacruz.data.remote.PayPalApiService
 import edu.ucne.farmaciacruz.data.repository.PaymentRepositoryImpl
 import edu.ucne.farmaciacruz.domain.repository.PaymentRepository
 import javax.inject.Singleton
