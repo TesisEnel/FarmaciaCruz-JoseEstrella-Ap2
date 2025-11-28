@@ -18,6 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -375,5 +376,27 @@ private fun RegistroContent(
                 }
             }
         }
+    }
+}
+
+@Preview(showBackground = true, showSystemUi = true)
+@Composable
+fun RegistroScreenPreview() {
+    MaterialTheme {
+        RegistroContent(
+            state = RegistroState(
+                nombre = "",
+                apellido = "",
+                email = "",
+                telefono = "",
+                password = "",
+                confirmarPassword = "",
+                aceptaTerminos = false,
+                isLoading = false,
+                error = null
+            ),
+            onEvent = {},
+            onBackToLogin = {}
+        )
     }
 }

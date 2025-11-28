@@ -17,6 +17,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -302,5 +303,25 @@ fun LoginScreenContent(
                 }
             }
         }
+    }
+}
+
+@Preview(showBackground = true, showSystemUi = true)
+@Composable
+fun LoginScreenPreview() {
+    MaterialTheme {
+        LoginScreenContent(
+            state = LoginState(
+                email = "",
+                password = "",
+                isLoading = false,
+                error = null
+            ),
+            passwordVisible = false,
+            onPasswordVisibilityChange = {},
+            onEvent = {},
+            onRegistroClick = {},
+            onOlvidoPasswordClick = {}
+        )
     }
 }
