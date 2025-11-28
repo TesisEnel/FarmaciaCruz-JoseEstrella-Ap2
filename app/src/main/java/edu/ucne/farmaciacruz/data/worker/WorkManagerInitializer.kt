@@ -4,7 +4,6 @@ import android.content.Context
 import androidx.startup.Initializer
 import androidx.work.Configuration
 import androidx.work.WorkManager
-import javax.inject.Inject
 
 class WorkManagerInitializer : Initializer<WorkManager> {
 
