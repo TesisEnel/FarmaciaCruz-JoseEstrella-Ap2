@@ -1,21 +1,22 @@
 package edu.ucne.farmaciacruz.data.repository
 
+import edu.ucne.farmaciacruz.core.common.ErrorMessages
 import edu.ucne.farmaciacruz.data.local.PreferencesManager
-import edu.ucne.farmaciacruz.data.remote.api.ApiService
-import edu.ucne.farmaciacruz.data.remote.request.LoginRequest
-import edu.ucne.farmaciacruz.data.remote.request.RecoveryRequest
-import edu.ucne.farmaciacruz.data.remote.request.RegisterRequest
+import edu.ucne.farmaciacruz.data.remote.ApiService
+import edu.ucne.farmaciacruz.data.remote.dto.LoginRequest
+import edu.ucne.farmaciacruz.data.remote.dto.RecoveryRequest
+import edu.ucne.farmaciacruz.data.remote.dto.RegisterRequest
 import edu.ucne.farmaciacruz.domain.model.Resource
 import edu.ucne.farmaciacruz.domain.model.User
 import edu.ucne.farmaciacruz.domain.repository.AuthRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flow
 import retrofit2.HttpException
 import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
-
 
 @Singleton
 class AuthRepositoryImpl @Inject constructor(
@@ -23,110 +24,100 @@ class AuthRepositoryImpl @Inject constructor(
     private val preferencesManager: PreferencesManager
 ) : AuthRepository {
 
-    override suspend fun login(email: String, password: String): Flow<Resource<User>> = flow {
-        try {
-            emit(Resource.Loading())
+    override fun login(email: String, password: String): Flow<Resource<User>> = flow {
+        emit(Resource.Loading())
 
+        try {
             val response = apiService.login(LoginRequest(email, password))
 
             if (response.isSuccessful && response.body() != null) {
-                val authResponse = response.body()!!.data!!
+                val data = response.body()!!.data!!
 
-                preferencesManager.saveToken(authResponse.token)
-                preferencesManager.saveRefreshToken(authResponse.refreshToken)
+                preferencesManager.saveToken(data.token)
+                preferencesManager.saveRefreshToken(data.refreshToken)
 
                 preferencesManager.saveUserData(
-                    userId = authResponse.usuario.usuarioId,
-                    email = authResponse.usuario.email,
-                    name = "${authResponse.usuario.nombre} ${authResponse.usuario.apellido}",
-                    role = authResponse.usuario.rol
+                    userId = data.usuario.usuarioId,
+                    email = data.usuario.email,
+                    name = "${data.usuario.nombre} ${data.usuario.apellido}",
+                    role = data.usuario.rol
                 )
 
-                val user = User(
-                    id = authResponse.usuario.usuarioId,
-                    email = authResponse.usuario.email,
-                    nombre = authResponse.usuario.nombre,
-                    apellido = authResponse.usuario.apellido,
-                    telefono = authResponse.usuario.telefono,
-                    rol = authResponse.usuario.rol
-                )
-
-                emit(Resource.Success(user))
+                emit(Resource.Success(User(
+                    id = data.usuario.usuarioId,
+                    email = data.usuario.email,
+                    nombre = data.usuario.nombre,
+                    apellido = data.usuario.apellido,
+                    telefono = data.usuario.telefono,
+                    rol = data.usuario.rol
+                )))
             } else {
-                val errorMessage = when (response.code()) {
-                    401 -> "Credenciales inválidas"
+                val message = when (response.code()) {
+                    401 -> ErrorMessages.NO_AUTORIZADO
                     403 -> "Cuenta desactivada"
-                    429 -> "Demasiados intentos. Intenta más tarde"
-                    else -> response.body()?.mensaje ?: "Error al iniciar sesión"
+                    else -> response.body()?.mensaje ?: ErrorMessages.ERROR_DESCONOCIDO
                 }
-                emit(Resource.Error(errorMessage))
+                emit(Resource.Error(message))
             }
+
         } catch (e: HttpException) {
-            emit(Resource.Error("Error de red: ${e.message()}"))
+            emit(Resource.Error("${ErrorMessages.ERROR_RED}: ${e.message()}"))
         } catch (e: IOException) {
-            emit(Resource.Error("Error de conexión. Verifica tu internet"))
+            emit(Resource.Error(ErrorMessages.ERROR_CONEXION))
         } catch (e: Exception) {
-            emit(Resource.Error(e.message ?: "Error desconocido"))
+            emit(Resource.Error(e.message ?: ErrorMessages.ERROR_DESCONOCIDO))
         }
     }
 
-    override suspend fun register(
+    override fun register(
         email: String,
         password: String,
         nombre: String,
         apellido: String,
         telefono: String?
     ): Flow<Resource<User>> = flow {
+        emit(Resource.Loading())
+
         try {
-            emit(Resource.Loading())
-
-            val request = RegisterRequest(
-                email = email,
-                password = password,
-                nombre = nombre,
-                apellido = apellido,
-                telefono = telefono
-            )
-
+            val request = RegisterRequest(email, password, nombre, apellido, telefono)
             val response = apiService.register(request)
 
             if (response.isSuccessful && response.body() != null) {
-                val authResponse = response.body()!!.data!!
+                val data = response.body()!!.data!!
 
-                preferencesManager.saveToken(authResponse.token)
-                preferencesManager.saveRefreshToken(authResponse.refreshToken)
+                preferencesManager.saveToken(data.token)
+                preferencesManager.saveRefreshToken(data.refreshToken)
 
                 preferencesManager.saveUserData(
-                    userId = authResponse.usuario.usuarioId,
-                    email = authResponse.usuario.email,
-                    name = "${authResponse.usuario.nombre} ${authResponse.usuario.apellido}",
-                    role = authResponse.usuario.rol
+                    userId = data.usuario.usuarioId,
+                    email = data.usuario.email,
+                    name = "${data.usuario.nombre} ${data.usuario.apellido}",
+                    role = data.usuario.rol
                 )
 
-                val user = User(
-                    id = authResponse.usuario.usuarioId,
-                    email = authResponse.usuario.email,
-                    nombre = authResponse.usuario.nombre,
-                    apellido = authResponse.usuario.apellido,
-                    telefono = authResponse.usuario.telefono,
-                    rol = authResponse.usuario.rol
-                )
-
-                emit(Resource.Success(user))
+                emit(Resource.Success(User(
+                    id = data.usuario.usuarioId,
+                    email = data.usuario.email,
+                    nombre = data.usuario.nombre,
+                    apellido = data.usuario.apellido,
+                    telefono = data.usuario.telefono,
+                    rol = data.usuario.rol
+                )))
             } else {
-                val errorMessage = when (response.code()) {
+                val message = when (response.code()) {
                     400 -> "Datos inválidos"
                     409 -> "El email ya está registrado"
-                    else -> "Error al registrarse"
+                    else -> ErrorMessages.ERROR_DESCONOCIDO
                 }
-                emit(Resource.Error(errorMessage))
+                emit(Resource.Error(message))
             }
+
         } catch (e: HttpException) {
-            emit(Resource.Error("Error de red: ${e.message()}"))
+            emit(Resource.Error("${ErrorMessages.ERROR_RED}: ${e.message()}"))
         } catch (e: IOException) {
-            emit(Resource.Error("Error de conexión"))
+            emit(Resource.Error(ErrorMessages.ERROR_CONEXION))
         } catch (e: Exception) {
-            emit(Resource.Error(e.message ?: "Error desconocido"))
+            emit(Resource.Error(e.message ?: ErrorMessages.ERROR_DESCONOCIDO))
         }
     }
 
@@ -141,58 +132,39 @@ class AuthRepositoryImpl @Inject constructor(
     }
 
     override fun getUserData(): Flow<User?> = flow {
-        val userId = preferencesManager.getUserId()
-        val email = preferencesManager.getUserEmail()
-        val name = preferencesManager.getUserName()
-        val role = preferencesManager.getUserRole()
+        val id = preferencesManager.getUserId().firstOrNull()
+        val email = preferencesManager.getUserEmail().firstOrNull()
+        val name = preferencesManager.getUserName().firstOrNull()
+        val role = preferencesManager.getUserRole().firstOrNull()
 
-        userId.collect { id ->
-            if (id != null) {
-                email.collect { mail ->
-                    name.collect { n ->
-                        role.collect { r ->
-                            if (mail != null && n != null && r != null) {
-                                val names = n.split(" ")
-                                emit(User(
-                                    id = id,
-                                    email = mail,
-                                    nombre = names.getOrNull(0) ?: "",
-                                    apellido = names.getOrNull(1) ?: "",
-                                    telefono = null,
-                                    rol = r
-                                ))
-                            }
-                        }
-                    }
-                }
-            } else {
-                emit(null)
-            }
+        if (id != null && email != null && name != null && role != null) {
+            val parts = name.split(" ")
+            emit(User(
+                id = id,
+                email = email,
+                nombre = parts.getOrNull(0) ?: "",
+                apellido = parts.getOrNull(1) ?: "",
+                telefono = null,
+                rol = role
+            ))
+        } else {
+            emit(null)
         }
     }
 
-    override suspend fun recoveryPassword(email: String): Flow<Resource<Unit>> = flow {
-        emit(Resource.Loading())
+    override fun recoveryPassword(email: String): Flow<Resource<Unit>> =
+        flow {
+            emit(Resource.Loading())
 
-        val request = RecoveryRequest(email)
+            val response = apiService.RecoveryPassword(RecoveryRequest(email))
 
-        val response = apiService.RecoveryPassword(request)
-
-        if (response.isSuccessful) {
-
-            val body = response.body()
-
-            if (body?.data != null) {
+            if (response.isSuccessful) {
                 emit(Resource.Success(Unit))
             } else {
-                emit(Resource.Error(body?.mensaje ?: "No se pudo enviar el correo"))
+                emit(Resource.Error("No se pudo enviar el correo"))
             }
 
-        } else {
-            emit(Resource.Error("Error HTTP ${response.code()}"))
+        }.catch {
+            emit(Resource.Error(ErrorMessages.ERROR_CONEXION))
         }
-
-    }.catch {
-        emit(Resource.Error(it.message ?: "Error de conexión"))
-    }
 }

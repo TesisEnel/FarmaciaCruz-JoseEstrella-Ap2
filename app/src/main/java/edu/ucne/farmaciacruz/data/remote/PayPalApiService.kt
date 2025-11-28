@@ -1,12 +1,17 @@
-package edu.ucne.farmaciacruz.data.remote.api
+package edu.ucne.farmaciacruz.data.remote
 
-import edu.ucne.farmaciacruz.data.remote.dto.*
 import edu.ucne.farmaciacruz.data.remote.dto.paypal.PayPalCaptureResponse
+import edu.ucne.farmaciacruz.data.remote.dto.paypal.PayPalOrderRequest
 import edu.ucne.farmaciacruz.data.remote.dto.paypal.PayPalOrderResponse
 import edu.ucne.farmaciacruz.data.remote.dto.paypal.PayPalTokenResponse
-import edu.ucne.farmaciacruz.data.remote.request.paypal.PayPalOrderRequest
 import retrofit2.Response
-import retrofit2.http.*
+import retrofit2.http.Body
+import retrofit2.http.Field
+import retrofit2.http.FormUrlEncoded
+import retrofit2.http.GET
+import retrofit2.http.Header
+import retrofit2.http.POST
+import retrofit2.http.Path
 
 interface PayPalApiService {
 

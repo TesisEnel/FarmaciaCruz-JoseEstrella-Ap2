@@ -1,4 +1,4 @@
-package edu.ucne.farmaciacruz.data.remote.api
+package edu.ucne.farmaciacruz.data.remote
 
 data class ApiResponse<T>(
     val mensaje: String? = null,

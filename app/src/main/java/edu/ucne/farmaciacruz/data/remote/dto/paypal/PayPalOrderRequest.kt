@@ -1,4 +1,4 @@
-package edu.ucne.farmaciacruz.data.remote.request.paypal
+package edu.ucne.farmaciacruz.data.remote.dto.paypal
 
 import com.google.gson.annotations.SerializedName
 import edu.ucne.farmaciacruz.data.remote.dto.paypal.ApplicationContext

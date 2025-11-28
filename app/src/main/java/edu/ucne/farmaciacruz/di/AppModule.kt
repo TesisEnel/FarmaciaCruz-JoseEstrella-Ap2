@@ -7,7 +7,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import edu.ucne.farmaciacruz.data.local.PreferencesManager
-import edu.ucne.farmaciacruz.data.remote.api.ApiService
+import edu.ucne.farmaciacruz.data.remote.ApiService
 import edu.ucne.farmaciacruz.data.repository.AuthRepositoryImpl
 import edu.ucne.farmaciacruz.data.repository.ProductRepositoryImpl
 import edu.ucne.farmaciacruz.domain.repository.AuthRepository

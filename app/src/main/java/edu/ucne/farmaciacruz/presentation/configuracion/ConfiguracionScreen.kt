@@ -15,12 +15,6 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
-sealed class ConfiguracionUiEvent {
-    data class ShowError(val message: String) : ConfiguracionUiEvent()
-    data class ShowSuccess(val message: String) : ConfiguracionUiEvent()
-    data object NavigateToLogin : ConfiguracionUiEvent()
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ConfiguracionScreen(
@@ -37,267 +31,77 @@ fun ConfiguracionScreen(
     LaunchedEffect(Unit) {
         viewModel.uiEvent.collect { event ->
             when (event) {
-                is ConfiguracionUiEvent.ShowError -> {
-                    snackbarHostState.showSnackbar(
-                        message = event.message,
-                        duration = SnackbarDuration.Short
-                    )
-                }
-                is ConfiguracionUiEvent.ShowSuccess -> {
-                    snackbarHostState.showSnackbar(
-                        message = event.message,
-                        duration = SnackbarDuration.Short
-                    )
-                }
-                is ConfiguracionUiEvent.NavigateToLogin -> {
+                is ConfiguracionUiEvent.ShowError ->
+                    snackbarHostState.showSnackbar(event.message)
+
+                is ConfiguracionUiEvent.ShowSuccess ->
+                    snackbarHostState.showSnackbar(event.message)
+
+                is ConfiguracionUiEvent.NavigateToLogin ->
                     onLogout()
-                }
             }
         }
     }
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        topBar = {
-            TopAppBar(
-                title = { Text("Configuración") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, "Volver")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
-                )
+        topBar = { ConfigTopBar(onBack = onBack) }
+    ) { padding ->
+
+        state.error?.let { errorMessage ->
+            ErrorWithRetry(
+                message = errorMessage,
+                onRetry = { onBack() }
             )
+            return@Scaffold
         }
-    ) { paddingValues ->
-        Box(modifier = Modifier.fillMaxSize()) {
+
+        Box(Modifier.fillMaxSize()) {
+
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(paddingValues)
+                    .padding(padding)
                     .verticalScroll(rememberScrollState())
                     .padding(16.dp)
             ) {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer
-                    ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(20.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Surface(
-                            modifier = Modifier.size(64.dp),
-                            shape = CircleShape,
-                            color = MaterialTheme.colorScheme.primary
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    Icons.Default.AccountCircle,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(40.dp),
-                                    tint = MaterialTheme.colorScheme.onPrimary
-                                )
-                            }
-                        }
+                UserCardSection(state)
 
-                        Spacer(modifier = Modifier.width(16.dp))
+                Spacer(Modifier.height(24.dp))
 
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = state.user?.nombreCompleto ?: "Cargando...",
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                            Text(
-                                text = state.user?.email ?: "",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            AssistChip(
-                                onClick = { },
-                                label = {
-                                    Text(
-                                        state.user?.rol ?: "",
-                                        style = MaterialTheme.typography.labelMedium
-                                    )
-                                },
-                                leadingIcon = {
-                                    Icon(
-                                        Icons.Default.Badge,
-                                        null,
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                },
-                                colors = AssistChipDefaults.assistChipColors(
-                                    containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
-                                    labelColor = MaterialTheme.colorScheme.onPrimaryContainer
-                                )
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                SectionHeader(title = "Configuración de API")
-
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+                ApiConfigSection(
+                    apiUrl = state.apiUrl,
                     onClick = {
                         tempApiUrl = state.apiUrl
                         showApiDialog = true
                     }
-                ) {
-                    ListItem(
-                        headlineContent = {
-                            Text(
-                                "URL de la API",
-                                fontWeight = FontWeight.Medium
-                            )
-                        },
-                        supportingContent = {
-                            Text(
-                                text = state.apiUrl,
-                                maxLines = 1,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        },
-                        leadingContent = {
-                            Icon(
-                                Icons.Default.Cloud,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                        },
-                        trailingContent = {
-                            Icon(
-                                Icons.Default.Edit,
-                                "Editar",
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                    )
-                }
+                )
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(Modifier.height(24.dp))
 
-                SectionHeader(title = "Apariencia")
+                AparienciaSection(
+                    isDark = state.isDarkTheme,
+                    onToggle = { viewModel.onEvent(ConfiguracionEvent.ThemeToggled) }
+                )
 
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-                ) {
-                    ListItem(
-                        headlineContent = {
-                            Text(
-                                "Tema Oscuro",
-                                fontWeight = FontWeight.Medium
-                            )
-                        },
-                        supportingContent = {
-                            Text(
-                                if (state.isDarkTheme) "Modo oscuro activado" else "Modo claro activado",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        },
-                        leadingContent = {
-                            Icon(
-                                if (state.isDarkTheme) Icons.Default.DarkMode else Icons.Default.LightMode,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                        },
-                        trailingContent = {
-                            Switch(
-                                checked = state.isDarkTheme,
-                                onCheckedChange = {
-                                    viewModel.onEvent(ConfiguracionEvent.ThemeToggled)
-                                }
-                            )
-                        }
-                    )
-                }
+                Spacer(Modifier.height(24.dp))
 
-                Spacer(modifier = Modifier.height(24.dp))
-
-                SectionHeader(title = "Sesión")
-
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.errorContainer
-                    ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-                    onClick = {
+                SesionSection(
+                    onLogoutClick = {
                         viewModel.onEvent(ConfiguracionEvent.ShowLogoutDialog)
                     }
-                ) {
-                    ListItem(
-                        headlineContent = {
-                            Text(
-                                "Cerrar Sesión",
-                                fontWeight = FontWeight.Medium,
-                                color = MaterialTheme.colorScheme.onErrorContainer
-                            )
-                        },
-                        supportingContent = {
-                            Text(
-                                "Salir de tu cuenta",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.7f)
-                            )
-                        },
-                        leadingContent = {
-                            Icon(
-                                Icons.Default.Logout,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.error
-                            )
-                        }
-                    )
-                }
+                )
 
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(Modifier.height(32.dp))
 
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                    Text(
-                        text = "Farmacia Cruz App",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    Text(
-                        text = "Versión 1.0.0",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                    )
-                }
+                FooterSection()
             }
 
             if (state.isLoading) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(paddingValues),
+                        .padding(padding),
                     contentAlignment = Alignment.Center
                 ) {
                     CircularProgressIndicator()
@@ -307,107 +111,264 @@ fun ConfiguracionScreen(
     }
 
     if (showApiDialog) {
-        AlertDialog(
-            onDismissRequest = { showApiDialog = false },
-            icon = { Icon(Icons.Default.Cloud, contentDescription = null) },
-            title = { Text("Cambiar URL de la API") },
-            text = {
-                Column {
-                    Text(
-                        "Ingresa la nueva URL base de la API:",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    OutlinedTextField(
-                        value = tempApiUrl,
-                        onValueChange = { tempApiUrl = it },
-                        label = { Text("URL") },
-                        placeholder = { Text("https://api.farmacia.com/") },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
-                        leadingIcon = {
-                            Icon(Icons.Default.Link, contentDescription = null)
-                        }
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "Nota: La aplicación se reiniciará después del cambio",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        viewModel.onEvent(ConfiguracionEvent.ApiUrlChanged(tempApiUrl))
-                        showApiDialog = false
-                    },
-                    enabled = tempApiUrl.isNotBlank()
-                ) {
-                    Text("Guardar")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showApiDialog = false }) {
-                    Text("Cancelar")
-                }
+        ApiDialog(
+            tempApiUrl = tempApiUrl,
+            onValueChange = { tempApiUrl = it },
+            onDismiss = { showApiDialog = false },
+            onSave = {
+                viewModel.onEvent(ConfiguracionEvent.ApiUrlChanged(tempApiUrl))
+                showApiDialog = false
             }
         )
     }
 
     if (state.showLogoutDialog) {
-        AlertDialog(
-            onDismissRequest = {
-                viewModel.onEvent(ConfiguracionEvent.DismissLogoutDialog)
-            },
-            icon = {
-                Icon(
-                    Icons.Default.Logout,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.error
-                )
-            },
-            title = { Text("Cerrar Sesión") },
-            text = {
+        LogoutDialog(
+            isLoading = state.isLoading,
+            onDismiss = { viewModel.onEvent(ConfiguracionEvent.DismissLogoutDialog) },
+            onConfirm = { viewModel.onEvent(ConfiguracionEvent.Logout) }
+        )
+    }
+}
+
+@ExperimentalMaterial3Api
+@Composable
+private fun ConfigTopBar(onBack: () -> Unit) {
+    TopAppBar(
+        title = { Text("Configuración") },
+        navigationIcon = {
+            IconButton(onClick = onBack) {
+                Icon(Icons.Default.ArrowBack, "Volver")
+            }
+        },
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = MaterialTheme.colorScheme.primary,
+            titleContentColor = MaterialTheme.colorScheme.onPrimary,
+            navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
+        )
+    )
+}
+
+@Composable
+private fun UserCardSection(state: ConfiguracionState) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Surface(
+                modifier = Modifier.size(64.dp),
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.primary
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        Icons.Default.AccountCircle,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.size(40.dp)
+                    )
+                }
+            }
+
+            Spacer(Modifier.width(16.dp))
+
+            Column(Modifier.weight(1f)) {
                 Text(
-                    "¿Estás seguro que deseas cerrar sesión? Tendrás que volver a iniciar sesión para acceder a la aplicación.",
+                    text = state.user?.nombreCompleto ?: "Cargando...",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = state.user?.email ?: "",
                     style = MaterialTheme.typography.bodyMedium
                 )
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        viewModel.onEvent(ConfiguracionEvent.Logout)
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.error
-                    ),
-                    enabled = !state.isLoading
-                ) {
-                    if (state.isLoading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(16.dp),
-                            strokeWidth = 2.dp,
-                            color = MaterialTheme.colorScheme.onError
-                        )
-                    } else {
-                        Text("Cerrar Sesión")
+
+                Spacer(Modifier.height(8.dp))
+
+                AssistChip(
+                    onClick = {},
+                    label = { Text(state.user?.rol ?: "") },
+                    leadingIcon = {
+                        Icon(Icons.Default.Badge, null, modifier = Modifier.size(16.dp))
                     }
-                }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ApiConfigSection(apiUrl: String, onClick: () -> Unit) {
+    SectionHeader("Configuración de API")
+    Card(onClick = onClick) {
+        ListItem(
+            headlineContent = { Text("URL de la API") },
+            supportingContent = {
+                Text(
+                    text = apiUrl,
+                    maxLines = 1,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             },
-            dismissButton = {
-                TextButton(
-                    onClick = {
-                        viewModel.onEvent(ConfiguracionEvent.DismissLogoutDialog)
-                    },
-                    enabled = !state.isLoading
-                ) {
-                    Text("Cancelar")
-                }
+            leadingContent = {
+                Icon(Icons.Default.Cloud, null, tint = MaterialTheme.colorScheme.primary)
+            },
+            trailingContent = {
+                Icon(Icons.Default.Edit, null, tint = MaterialTheme.colorScheme.primary)
             }
         )
     }
+}
+
+@Composable
+private fun AparienciaSection(isDark: Boolean, onToggle: () -> Unit) {
+    SectionHeader("Apariencia")
+    Card {
+        ListItem(
+            headlineContent = { Text("Tema Oscuro") },
+            supportingContent = {
+                Text(
+                    if (isDark) "Modo oscuro activado" else "Modo claro activado",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            },
+            leadingContent = {
+                Icon(
+                    if (isDark) Icons.Default.DarkMode else Icons.Default.LightMode,
+                    null,
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            },
+            trailingContent = {
+                Switch(checked = isDark, onCheckedChange = { onToggle() })
+            }
+        )
+    }
+}
+
+@Composable
+private fun SesionSection(onLogoutClick: () -> Unit) {
+    SectionHeader("Sesión")
+    Card(
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.errorContainer
+        ),
+        onClick = onLogoutClick
+    ) {
+        ListItem(
+            headlineContent = {
+                Text(
+                    "Cerrar Sesión",
+                    color = MaterialTheme.colorScheme.onErrorContainer
+                )
+            },
+            supportingContent = {
+                Text(
+                    "Salir de tu cuenta",
+                    color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.7f)
+                )
+            },
+            leadingContent = {
+                Icon(Icons.Default.Logout, null, tint = MaterialTheme.colorScheme.error)
+            }
+        )
+    }
+}
+
+@Composable
+private fun FooterSection() {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        HorizontalDivider()
+        Text(
+            "Farmacia Cruz App",
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.SemiBold
+        )
+        Text(
+            "Versión 1.0.0",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+        )
+    }
+}
+
+@Composable
+private fun ApiDialog(
+    tempApiUrl: String,
+    onValueChange: (String) -> Unit,
+    onDismiss: () -> Unit,
+    onSave: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        icon = { Icon(Icons.Default.Cloud, null) },
+        title = { Text("Cambiar URL de la API") },
+        text = {
+            Column {
+                OutlinedTextField(
+                    value = tempApiUrl,
+                    onValueChange = onValueChange,
+                    label = { Text("URL") },
+                    leadingIcon = { Icon(Icons.Default.Link, null) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            Button(onClick = onSave, enabled = tempApiUrl.isNotBlank()) {
+                Text("Guardar")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancelar") }
+        }
+    )
+}
+
+@Composable
+private fun LogoutDialog(
+    isLoading: Boolean,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        icon = { Icon(Icons.Default.Logout, null, tint = MaterialTheme.colorScheme.error) },
+        title = { Text("Cerrar Sesión") },
+        text = {
+            Text("¿Estás seguro que deseas cerrar sesión? Tendrás que volver a iniciar sesión.")
+        },
+        confirmButton = {
+            Button(
+                onClick = onConfirm,
+                enabled = !isLoading,
+                colors = ButtonDefaults.buttonColors(MaterialTheme.colorScheme.error)
+            ) {
+                if (isLoading) CircularProgressIndicator(
+                    modifier = Modifier.size(16.dp),
+                    strokeWidth = 2.dp
+                )
+                else Text("Cerrar Sesión")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss, enabled = !isLoading) {
+                Text("Cancelar")
+            }
+        }
+    )
 }
 
 @Composable
@@ -416,7 +377,37 @@ private fun SectionHeader(title: String) {
         text = title,
         style = MaterialTheme.typography.titleMedium,
         fontWeight = FontWeight.Bold,
-        color = MaterialTheme.colorScheme.onSurface,
         modifier = Modifier.padding(bottom = 8.dp)
     )
+}
+
+@Composable
+fun ErrorWithRetry(
+    message: String,
+    onRetry: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Icon(
+            imageVector = Icons.Default.Error,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.error,
+            modifier = Modifier.size(64.dp)
+        )
+
+        Text(
+            text = message,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.error
+        )
+
+        Button(onClick = onRetry) {
+            Text("Reintentar")
+        }
+    }
 }

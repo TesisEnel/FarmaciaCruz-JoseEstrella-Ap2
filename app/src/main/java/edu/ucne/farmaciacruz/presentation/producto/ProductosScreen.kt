@@ -20,14 +20,12 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import edu.ucne.farmaciacruz.domain.model.Producto
 import edu.ucne.farmaciacruz.presentation.carrito.CarritoBottomSheet
-import edu.ucne.farmaciacruz.ui.theme.FarmaciaCruzTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -44,12 +42,9 @@ fun ProductosScreen(
     LaunchedEffect(Unit) {
         viewModel.uiEvent.collect { event ->
             when (event) {
-                is ProductosUiEvent.ShowError ->
-                    snackbarHostState.showSnackbar(event.message)
-                is ProductosUiEvent.ShowSuccess ->
-                    snackbarHostState.showSnackbar(event.message)
-                is ProductosUiEvent.NavigateToDetail ->
-                    onProductoClick(event.productoId)
+                is ProductosUiEvent.ShowError -> snackbarHostState.showSnackbar(event.message)
+                is ProductosUiEvent.ShowSuccess -> snackbarHostState.showSnackbar(event.message)
+                is ProductosUiEvent.NavigateToDetail -> onProductoClick(event.productoId)
             }
         }
     }
@@ -82,7 +77,6 @@ fun ProductosScreen(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ProductosScreenContent(
     state: ProductosState,
@@ -96,96 +90,12 @@ private fun ProductosScreenContent(
         modifier = Modifier.windowInsetsPadding(WindowInsets.systemBars),
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                color = MaterialTheme.colorScheme.primary
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column {
-                            Text(
-                                text = "Bienvenido",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onPrimary
-                            )
-                        }
-
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            IconButton(
-                                onClick = { },
-                                modifier = Modifier.size(40.dp)
-                            ) {
-                                Icon(
-                                    Icons.Outlined.Notifications,
-                                    contentDescription = "Notificaciones",
-                                    tint = MaterialTheme.colorScheme.onPrimary
-                                )
-                            }
-
-                            BadgedBox(
-                                badge = {
-                                    if (cantidadCarrito > 0) {
-                                        Badge(containerColor = MaterialTheme.colorScheme.error) {
-                                            Text(cantidadCarrito.toString())
-                                        }
-                                    }
-                                }
-                            ) {
-                                IconButton(
-                                    onClick = onCarritoClick,
-                                    modifier = Modifier.size(40.dp)
-                                ) {
-                                    Icon(
-                                        Icons.Outlined.ShoppingCart,
-                                        contentDescription = "Carrito",
-                                        tint = MaterialTheme.colorScheme.onPrimary
-                                    )
-                                }
-                            }
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    OutlinedTextField(
-                        value = state.searchQuery,
-                        onValueChange = { onEvent(ProductosEvent.SearchQueryChanged(it)) },
-                        modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("Buscar productos…") },
-                        leadingIcon = {
-                            Icon(
-                                Icons.Outlined.Search,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurface
-                            )
-                        },
-                        trailingIcon = {
-                            if (state.searchQuery.isNotEmpty()) {
-                                IconButton(
-                                    onClick = { onEvent(ProductosEvent.SearchQueryChanged("")) }
-                                ) {
-                                    Icon(
-                                        Icons.Filled.Clear,
-                                        contentDescription = "Limpiar",
-                                        tint = MaterialTheme.colorScheme.onSurface
-                                    )
-                                }
-                            }
-                        },
-                        singleLine = true,
-                        shape = RoundedCornerShape(12.dp)
-                    )
-                }
-            }
+            ProductosTopBar(
+                state = state,
+                cantidadCarrito = cantidadCarrito,
+                onEvent = onEvent,
+                onCarritoClick = onCarritoClick
+            )
         },
         bottomBar = {
             BottomBarManual(
@@ -205,158 +115,252 @@ private fun ProductosScreenContent(
         ) {
 
             when {
-                state.isLoading -> {
-                    Box(Modifier.fillMaxSize(), Alignment.Center) {
-                        CircularProgressIndicator()
-                    }
-                }
+                state.isLoading -> ProductosLoadingState()
 
-                state.error != null -> {
-                    Box(Modifier.fillMaxSize(), Alignment.Center) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(16.dp),
-                            modifier = Modifier.padding(32.dp)
-                        ) {
-                            Icon(
-                                Icons.Outlined.ErrorOutline,
-                                contentDescription = null,
-                                modifier = Modifier.size(64.dp),
-                                tint = MaterialTheme.colorScheme.error
-                            )
-                            Text(state.error, style = MaterialTheme.typography.bodyLarge)
-                            Button(onClick = { onEvent(ProductosEvent.LoadProductos) }) {
-                                Text("Reintentar")
-                            }
-                        }
-                    }
-                }
+                state.error != null -> ProductosErrorState(
+                    error = state.error,
+                    onRetry = { onEvent(ProductosEvent.LoadProductos) }
+                )
 
-                else -> {
-
-                    LazyColumn(
-                        contentPadding = PaddingValues(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-
-                        item {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                QuickAccessCard(
-                                    icon = Icons.Outlined.MedicalServices,
-                                    title = "Mis Pedidos",
-                                    onClick = { }
-                                )
-                                QuickAccessCard(
-                                    icon = Icons.Outlined.History,
-                                    title = "Historial",
-                                    onClick = { }
-                                )
-                                QuickAccessCard(
-                                    icon = Icons.Outlined.FavoriteBorder,
-                                    title = "Favoritos",
-                                    onClick = { }
-                                )
-                            }
-                        }
-
-                        if (state.categorias.isNotEmpty()) {
-                            item {
-                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-
-                                    Text(
-                                        "Categorías",
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.SemiBold
-                                    )
-                                    LazyRow(
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                    ) {
-                                        item {
-                                            FilterChip(
-                                                selected = state.selectedCategoria == null,
-                                                onClick = { onEvent(ProductosEvent.CategoriaSelected(null)) },
-                                                label = { Text("Todas") }
-                                            )
-                                        }
-
-                                        items(state.categorias) { categoria ->
-                                            FilterChip(
-                                                selected = state.selectedCategoria == categoria,
-                                                onClick = { onEvent(ProductosEvent.CategoriaSelected(categoria)) },
-                                                label = { Text(categoria) }
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        item {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    "Productos Disponibles",
-                                    style = MaterialTheme.typography.titleLarge,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Text(
-                                    "${state.productosFiltrados.size} productos",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-
-                        if (state.productosFiltrados.isEmpty()) {
-                            item {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(32.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Column(
-                                        horizontalAlignment = Alignment.CenterHorizontally,
-                                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                                    ) {
-                                        Icon(
-                                            Icons.Outlined.SearchOff,
-                                            contentDescription = null,
-                                            modifier = Modifier.size(48.dp),
-                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                        Text(
-                                            "No se encontraron productos",
-                                            style = MaterialTheme.typography.bodyLarge,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                }
-                            }
-                        } else {
-                            items(state.productosFiltrados) { producto ->
-                                ProductoCard(
-                                    producto = producto,
-                                    onClick = { onEvent(ProductosEvent.ProductoClicked(producto.id)) },
-                                    onAddToCart = {
-                                        onEvent(ProductosEvent.AddToCart(producto))
-                                    }
-                                )
-                            }
-                        }
-                    }
-                }
+                else -> ProductosList(
+                    state = state,
+                    onEvent = onEvent
+                )
             }
         }
     }
 }
 
+@Composable
+private fun ProductosTopBar(
+    state: ProductosState,
+    cantidadCarrito: Int,
+    onEvent: (ProductosEvent) -> Unit,
+    onCarritoClick: () -> Unit
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = MaterialTheme.colorScheme.primary
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    "Bienvenido",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onPrimary
+                )
+
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    IconButton(onClick = {}, modifier = Modifier.size(40.dp)) {
+                        Icon(
+                            Icons.Outlined.Notifications,
+                            contentDescription = "Notificaciones",
+                            tint = MaterialTheme.colorScheme.onPrimary
+                        )
+                    }
+
+                    BadgedBox(
+                        badge = {
+                            if (cantidadCarrito > 0) {
+                                Badge { Text(cantidadCarrito.toString()) }
+                            }
+                        }
+                    ) {
+                        IconButton(
+                            onClick = onCarritoClick,
+                            modifier = Modifier.size(40.dp)
+                        ) {
+                            Icon(
+                                Icons.Outlined.ShoppingCart,
+                                contentDescription = "Carrito",
+                                tint = MaterialTheme.colorScheme.onPrimary
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            ProductosSearchBar(
+                searchQuery = state.searchQuery,
+                onSearchChange = { onEvent(ProductosEvent.SearchQueryChanged(it)) }
+            )
+        }
+    }
+}
+
+@Composable
+private fun ProductosSearchBar(
+    searchQuery: String,
+    onSearchChange: (String) -> Unit
+) {
+    OutlinedTextField(
+        value = searchQuery,
+        onValueChange = onSearchChange,
+        modifier = Modifier.fillMaxWidth(),
+        placeholder = { Text("Buscar productos…") },
+        leadingIcon = {
+            Icon(Icons.Outlined.Search, contentDescription = null)
+        },
+        trailingIcon = {
+            if (searchQuery.isNotEmpty()) {
+                IconButton(onClick = { onSearchChange("") }) {
+                    Icon(Icons.Filled.Clear, contentDescription = "Limpiar")
+                }
+            }
+        },
+        singleLine = true,
+        shape = RoundedCornerShape(12.dp)
+    )
+}
+
+@Composable
+private fun ProductosErrorState(error: String, onRetry: () -> Unit) {
+    Box(Modifier.fillMaxSize(), Alignment.Center) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier.padding(32.dp)
+        ) {
+            Icon(
+                Icons.Outlined.ErrorOutline,
+                contentDescription = null,
+                modifier = Modifier.size(64.dp),
+                tint = MaterialTheme.colorScheme.error
+            )
+            Text(error, style = MaterialTheme.typography.bodyLarge)
+            Button(onClick = onRetry) { Text("Reintentar") }
+        }
+    }
+}
+
+@Composable
+private fun ProductosLoadingState() {
+    Box(Modifier.fillMaxSize(), Alignment.Center) {
+        CircularProgressIndicator()
+    }
+}
+
+@Composable
+private fun ProductosList(
+    state: ProductosState,
+    onEvent: (ProductosEvent) -> Unit
+) {
+    LazyColumn(
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                QuickAccessCard(Icons.Outlined.MedicalServices, "Mis Pedidos") {}
+                QuickAccessCard(Icons.Outlined.History, "Historial") {}
+                QuickAccessCard(Icons.Outlined.FavoriteBorder, "Favoritos") {}
+            }
+        }
+
+        if (state.categorias.isNotEmpty()) {
+            item {
+                Column {
+                    Text(
+                        "Categorías",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    ProductosCategorias(state, onEvent)
+                }
+            }
+        }
+
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    "Productos Disponibles",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    "${state.productosFiltrados.size} productos",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+        }
+
+        if (state.productosFiltrados.isEmpty()) {
+            item { ProductosEmptyState() }
+        } else {
+            items(state.productosFiltrados) { producto ->
+                ProductoCard(
+                    producto = producto,
+                    onClick = { onEvent(ProductosEvent.ProductoClicked(producto.id)) },
+                    onAddToCart = { onEvent(ProductosEvent.AddToCart(producto)) }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProductosCategorias(
+    state: ProductosState,
+    onEvent: (ProductosEvent) -> Unit
+) {
+    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        item {
+            FilterChip(
+                selected = state.selectedCategoria == null,
+                onClick = { onEvent(ProductosEvent.CategoriaSelected(null)) },
+                label = { Text("Todas") }
+            )
+        }
+
+        items(state.categorias) { categoria ->
+            FilterChip(
+                selected = state.selectedCategoria == categoria,
+                onClick = { onEvent(ProductosEvent.CategoriaSelected(categoria)) },
+                label = { Text(categoria) }
+            )
+        }
+    }
+}
+
+@Composable
+private fun ProductosEmptyState() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(32.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Icon(
+                Icons.Outlined.SearchOff,
+                contentDescription = null,
+                modifier = Modifier.size(48.dp)
+            )
+            Text("No se encontraron productos")
+        }
+    }
+}
 @Composable
 fun BottomBarManual(
     onHome: () -> Unit,
@@ -471,7 +475,6 @@ fun ProductoCard(
                 .padding(12.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-
             Surface(
                 modifier = Modifier.size(80.dp),
                 shape = RoundedCornerShape(12.dp),
@@ -538,71 +541,10 @@ fun ProductoCard(
 
             FilledIconButton(
                 onClick = onAddToCart,
-                modifier = Modifier.size(40.dp),
-                colors = IconButtonDefaults.filledIconButtonColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                )
+                modifier = Modifier.size(40.dp)
             ) {
-                Icon(Icons.Outlined.Add, contentDescription = "Agregar", modifier = Modifier.size(20.dp))
+                Icon(Icons.Outlined.Add, contentDescription = "Agregar")
             }
         }
-    }
-}
-
-@Preview(name = "Productos Screen - Light", showBackground = true)
-@Composable
-private fun ProductosScreenPreview() {
-    val sampleProductos = listOf(
-        Producto(1, "Paracetamol 500mg", "Analgésico", "", 45.00, "Medicamentos"),
-        Producto(2, "Ibuprofeno 400mg", "Antiinflamatorio", "", 45.00, "Medicamentos"),
-        Producto(3, "Vitamina C 1000mg", "Suplemento", "", 45.00, "Vitaminas")
-    )
-
-    FarmaciaCruzTheme {
-        ProductosScreenContent(
-            state = ProductosState(
-                productos = sampleProductos,
-                productosFiltrados = sampleProductos,
-                categorias = listOf("Medicamentos", "Vitaminas", "Suplementos", "Dermatología"),
-                selectedCategoria = null,
-                searchQuery = "",
-                isLoading = false,
-                error = null
-            ),
-            snackbarHostState = remember { SnackbarHostState() },
-            cantidadCarrito = 3,
-            onEvent = {},
-            onCarritoClick = {},
-            onConfigClick = {}
-        )
-    }
-}
-
-@Preview(name = "Productos Screen - Dark", showBackground = true)
-@Composable
-private fun ProductosScreenPreviewDark() {
-    val sampleProductos = listOf(
-        Producto(1, "Paracetamol 500mg", "Analgésico", "", 234.3, "Medicamentos"),
-        Producto(2, "Ibuprofeno 400mg", "Antiinflamatorio", "", 65.00, "Medicamentos")
-    )
-
-    FarmaciaCruzTheme(darkTheme = true) {
-        ProductosScreenContent(
-            state = ProductosState(
-                productos = sampleProductos,
-                productosFiltrados = sampleProductos,
-                categorias = listOf("Medicamentos", "Vitaminas", "Dermatología"),
-                selectedCategoria = null,
-                searchQuery = "",
-                isLoading = false,
-                error = null
-            ),
-            snackbarHostState = remember { SnackbarHostState() },
-            cantidadCarrito = 0,
-            onEvent = {},
-            onCarritoClick = {},
-            onConfigClick = {}
-        )
     }
 }

@@ -16,7 +16,7 @@ import edu.ucne.farmaciacruz.presentation.configuracion.ConfiguracionScreen
 import edu.ucne.farmaciacruz.presentation.login.LoginScreen
 import edu.ucne.farmaciacruz.presentation.login.recoverypassword.RecuperarPasswordScreen
 import edu.ucne.farmaciacruz.presentation.login.registro.RegistroScreen
-import edu.ucne.farmaciacruz.presentation.ordenes.MisOrdenesScreen
+import edu.ucne.farmaciacruz.presentation.order.MisOrdenesScreen
 import edu.ucne.farmaciacruz.presentation.producto.ProductosScreen
 import edu.ucne.farmaciacruz.presentation.producto.detalle.ProductoDetalleScreen
 
@@ -86,9 +86,6 @@ fun AppNavigation(
 
         composable<MisOrdenesRoute> {
             MisOrdenesScreen(
-                onBack = {
-                    navController.popBackStack()
-                },
                 onOrderClick = { orderId ->
                     navController.navigate(OrdenDetalleRoute(orderId))
                 }

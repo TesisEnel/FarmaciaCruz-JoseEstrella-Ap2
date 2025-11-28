@@ -17,6 +17,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -42,7 +43,7 @@ fun LoginScreen(
         }
     }
 
-    LoginScreenContent(
+    LoginContent(
         state = state,
         passwordVisible = passwordVisible,
         onPasswordVisibilityChange = { passwordVisible = !passwordVisible },
@@ -53,7 +54,7 @@ fun LoginScreen(
 }
 
 @Composable
-fun LoginScreenContent(
+private fun LoginContent(
     state: LoginState,
     passwordVisible: Boolean,
     onPasswordVisibilityChange: () -> Unit,
@@ -70,237 +71,273 @@ fun LoginScreenContent(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 32.dp, vertical = 40.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Top
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Image(
-                painter = painterResource(id = R.drawable.logo_farmacia_cruz),
-                contentDescription = "Farmacia Cruz Logo",
-                modifier = Modifier
-                    .size(250.dp)
-                    .align(Alignment.CenterHorizontally)
+            LoginLogo()
+
+            Spacer(modifier = Modifier.height(28.dp))
+
+            LoginCard(
+                state = state,
+                passwordVisible = passwordVisible,
+                onPasswordVisibilityChange = onPasswordVisibilityChange,
+                onEvent = onEvent,
+                onOlvidoPasswordClick = onOlvidoPasswordClick
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
+            LoginFooter(onRegistroClick)
+
+            LoginError(state.error, onEvent)
+        }
+    }
+}
+
+@Composable
+private fun LoginLogo() {
+    Image(
+        painter = painterResource(id = R.drawable.logo_farmacia_cruz),
+        contentDescription = null,
+        modifier = Modifier.size(250.dp)
+    )
+
+    Spacer(modifier = Modifier.height(8.dp))
+
+    Text(
+        text = "Tu salud es nuestra prioridad",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f),
+        fontSize = 12.sp
+    )
+}
+
+@Composable
+private fun LoginCard(
+    state: LoginState,
+    passwordVisible: Boolean,
+    onPasswordVisibilityChange: () -> Unit,
+    onEvent: (LoginEvent) -> Unit,
+    onOlvidoPasswordClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(28.dp)
+        ) {
             Text(
-                text = "Tu salud es nuestra prioridad",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f),
-                fontSize = 12.sp,
+                text = "Iniciar Sesión",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             )
 
             Spacer(modifier = Modifier.height(28.dp))
 
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .wrapContentHeight(),
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(28.dp)
-                ) {
-                    Text(
-                        text = "Iniciar Sesión",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.align(Alignment.CenterHorizontally)
-                    )
-
-                    Spacer(modifier = Modifier.height(28.dp))
-
-                    Text(
-                        text = "Email",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        fontWeight = FontWeight.Medium,
-                        fontSize = 13.sp
-                    )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    OutlinedTextField(
-                        value = state.email,
-                        onValueChange = { onEvent(LoginEvent.EmailChanged(it)) },
-                        modifier = Modifier.fillMaxWidth(),
-                        placeholder = {
-                            Text(
-                                "example@email.com",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        },
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Email
-                        ),
-                        singleLine = true,
-                        enabled = !state.isLoading,
-                        shape = RoundedCornerShape(8.dp)
-                    )
-
-                    Spacer(modifier = Modifier.height(20.dp))
-
-                    Text(
-                        text = "Password",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        fontWeight = FontWeight.Medium,
-                        fontSize = 13.sp
-                    )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    OutlinedTextField(
-                        value = state.password,
-                        onValueChange = { onEvent(LoginEvent.PasswordChanged(it)) },
-                        modifier = Modifier.fillMaxWidth(),
-                        placeholder = {
-                            Text(
-                                "At least 8 characters",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        },
-                        visualTransformation = if (passwordVisible)
-                            VisualTransformation.None else PasswordVisualTransformation(),
-                        trailingIcon = {
-                            IconButton(onClick = onPasswordVisibilityChange) {
-                                Icon(
-                                    imageVector = if (passwordVisible)
-                                        Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                                    contentDescription = "Toggle Password",
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        },
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Password
-                        ),
-                        singleLine = true,
-                        enabled = !state.isLoading,
-                        shape = RoundedCornerShape(8.dp)
-                    )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    TextButton(
-                        onClick = onOlvidoPasswordClick,
-                        modifier = Modifier.align(Alignment.End),
-                        contentPadding = PaddingValues(0.dp)
-                    ) {
-                        Text(
-                            text = "Forgot Password?",
-                            color = MaterialTheme.colorScheme.secondary,
-                            style = MaterialTheme.typography.bodySmall,
-                            fontSize = 12.sp
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Button(
-                        onClick = { onEvent(LoginEvent.LoginClicked) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(50.dp),
-                        enabled = !state.isLoading
-                                && state.email.isNotBlank()
-                                && state.password.isNotBlank(),
-                        shape = RoundedCornerShape(8.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
-                        )
-                    ) {
-                        if (state.isLoading) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(24.dp),
-                                color = MaterialTheme.colorScheme.onPrimary,
-                                strokeWidth = 2.dp
-                            )
-                        } else {
-                            Text(
-                                "Sign In",
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.onPrimary
-                            )
-                        }
-                    }
-                }
-            }
+            LoginEmailField(state, onEvent)
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
+            LoginPasswordField(state, passwordVisible, onPasswordVisibilityChange, onEvent)
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            TextButton(
+                onClick = onOlvidoPasswordClick,
+                modifier = Modifier.align(Alignment.End),
+                contentPadding = PaddingValues(0.dp)
             ) {
                 Text(
-                    text = "Don't have an account?",
-                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f),
+                    text = "Forgot Password?",
+                    color = MaterialTheme.colorScheme.secondary,
                     style = MaterialTheme.typography.bodySmall,
                     fontSize = 12.sp
                 )
-                Spacer(modifier = Modifier.width(4.dp))
-                TextButton(
-                    onClick = onRegistroClick,
-                    contentPadding = PaddingValues(0.dp)
-                ) {
-                    Text(
-                        text = "Sign up",
-                        color = MaterialTheme.colorScheme.tertiary,
-                        style = MaterialTheme.typography.bodySmall,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 12.sp
-                    )
-                }
             }
 
-            state.error?.let { error ->
-                Spacer(modifier = Modifier.height(16.dp))
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.errorContainer
-                    ),
-                    shape = RoundedCornerShape(12.dp)
+            Spacer(modifier = Modifier.height(16.dp))
+
+            LoginButton(state, onEvent)
+        }
+    }
+}
+
+@Composable
+private fun LoginEmailField(
+    state: LoginState,
+    onEvent: (LoginEvent) -> Unit
+) {
+    Text(
+        text = "Email",
+        style = MaterialTheme.typography.bodyMedium,
+        fontWeight = FontWeight.Medium,
+        fontSize = 13.sp
+    )
+
+    Spacer(modifier = Modifier.height(8.dp))
+
+    OutlinedTextField(
+        value = state.email,
+        onValueChange = { onEvent(LoginEvent.EmailChanged(it)) },
+        modifier = Modifier.fillMaxWidth(),
+        placeholder = { Text("example@email.com") },
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+        singleLine = true,
+        enabled = !state.isLoading,
+        shape = RoundedCornerShape(8.dp)
+    )
+}
+
+@Composable
+private fun LoginPasswordField(
+    state: LoginState,
+    passwordVisible: Boolean,
+    onPasswordVisibilityChange: () -> Unit,
+    onEvent: (LoginEvent) -> Unit
+) {
+    Text(
+        text = "Password",
+        style = MaterialTheme.typography.bodyMedium,
+        fontWeight = FontWeight.Medium,
+        fontSize = 13.sp
+    )
+
+    Spacer(modifier = Modifier.height(8.dp))
+
+    OutlinedTextField(
+        value = state.password,
+        onValueChange = { onEvent(LoginEvent.PasswordChanged(it)) },
+        modifier = Modifier.fillMaxWidth(),
+        placeholder = { Text("At least 8 characters") },
+        visualTransformation = if (passwordVisible) VisualTransformation.None
+        else PasswordVisualTransformation(),
+        trailingIcon = {
+            IconButton(onClick = onPasswordVisibilityChange) {
+                Icon(
+                    if (passwordVisible) Icons.Default.Visibility
+                    else Icons.Default.VisibilityOff,
+                    contentDescription = null
+                )
+            }
+        },
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+        singleLine = true,
+        enabled = !state.isLoading,
+        shape = RoundedCornerShape(8.dp)
+    )
+}
+
+@Composable
+private fun LoginButton(
+    state: LoginState,
+    onEvent: (LoginEvent) -> Unit
+) {
+    Button(
+        onClick = { onEvent(LoginEvent.LoginClicked) },
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(50.dp),
+        enabled = !state.isLoading &&
+                state.email.isNotBlank() &&
+                state.password.isNotBlank(),
+        shape = RoundedCornerShape(8.dp)
+    ) {
+        if (state.isLoading) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(24.dp),
+                color = MaterialTheme.colorScheme.onPrimary,
+                strokeWidth = 2.dp
+            )
+        } else {
+            Text(
+                "Sign In",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onPrimary
+            )
+        }
+    }
+}
+
+@Composable
+private fun LoginFooter(onRegistroClick: () -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.Center
+    ) {
+        Text(
+            text = "Don't have an account?",
+            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f),
+            style = MaterialTheme.typography.bodySmall
+        )
+        Spacer(Modifier.width(4.dp))
+        TextButton(onClick = onRegistroClick) {
+            Text(
+                text = "Sign up",
+                color = MaterialTheme.colorScheme.tertiary,
+                fontWeight = FontWeight.Bold
+            )
+        }
+    }
+}
+
+@Composable
+private fun LoginError(
+    error: String?,
+    onEvent: (LoginEvent) -> Unit
+) {
+    error?.let {
+        Spacer(Modifier.height(16.dp))
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.errorContainer
+            ),
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = it,
+                    color = MaterialTheme.colorScheme.onErrorContainer,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.weight(1f)
+                )
+                IconButton(
+                    onClick = { onEvent(LoginEvent.ClearError) },
+                    modifier = Modifier.size(20.dp)
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = error,
-                            color = MaterialTheme.colorScheme.onErrorContainer,
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.weight(1f)
-                        )
-                        IconButton(
-                            onClick = { onEvent(LoginEvent.ClearError) },
-                            modifier = Modifier.size(20.dp)
-                        ) {
-                            Text(
-                                "✕",
-                                color = MaterialTheme.colorScheme.onErrorContainer
-                            )
-                        }
-                    }
+                    Text("✕", color = MaterialTheme.colorScheme.onErrorContainer)
                 }
             }
         }
+    }
+}
+
+@Preview(showSystemUi = true)
+@Composable
+fun LoginPreview() {
+    MaterialTheme {
+        LoginContent(
+            state = LoginState("", "", false, null),
+            passwordVisible = false,
+            onPasswordVisibilityChange = {},
+            onEvent = {},
+            onRegistroClick = {},
+            onOlvidoPasswordClick = {}
+        )
     }
 }

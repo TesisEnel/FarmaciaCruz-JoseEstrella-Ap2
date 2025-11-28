@@ -1,4 +1,4 @@
-package edu.ucne.farmaciacruz.data.remote.api
+package edu.ucne.farmaciacruz.data.remote
 
 import edu.ucne.farmaciacruz.data.local.PreferencesManager
 import kotlinx.coroutines.flow.first
