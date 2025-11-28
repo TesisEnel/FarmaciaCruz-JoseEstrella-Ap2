@@ -45,10 +45,17 @@ fun ConfiguracionScreen(
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        topBar = {
-            ConfigTopBar(onBack = onBack)
-        }
+        topBar = { ConfigTopBar(onBack = onBack) }
     ) { padding ->
+
+        state.error?.let { errorMessage ->
+            ErrorWithRetry(
+                message = errorMessage,
+                onRetry = { onBack() }
+            )
+            return@Scaffold
+        }
+
         Box(Modifier.fillMaxSize()) {
 
             Column(
@@ -118,12 +125,8 @@ fun ConfiguracionScreen(
     if (state.showLogoutDialog) {
         LogoutDialog(
             isLoading = state.isLoading,
-            onDismiss = {
-                viewModel.onEvent(ConfiguracionEvent.DismissLogoutDialog)
-            },
-            onConfirm = {
-                viewModel.onEvent(ConfiguracionEvent.Logout)
-            }
+            onDismiss = { viewModel.onEvent(ConfiguracionEvent.DismissLogoutDialog) },
+            onConfirm = { viewModel.onEvent(ConfiguracionEvent.Logout) }
         )
     }
 }
@@ -274,11 +277,7 @@ private fun SesionSection(onLogoutClick: () -> Unit) {
                 )
             },
             leadingContent = {
-                Icon(
-                    Icons.Default.Logout,
-                    null,
-                    tint = MaterialTheme.colorScheme.error
-                )
+                Icon(Icons.Default.Logout, null, tint = MaterialTheme.colorScheme.error)
             }
         )
     }
@@ -380,4 +379,35 @@ private fun SectionHeader(title: String) {
         fontWeight = FontWeight.Bold,
         modifier = Modifier.padding(bottom = 8.dp)
     )
+}
+
+@Composable
+fun ErrorWithRetry(
+    message: String,
+    onRetry: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Icon(
+            imageVector = Icons.Default.Error,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.error,
+            modifier = Modifier.size(64.dp)
+        )
+
+        Text(
+            text = message,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.error
+        )
+
+        Button(onClick = onRetry) {
+            Text("Reintentar")
+        }
+    }
 }

@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
+import edu.ucne.farmaciacruz.presentation.configuracion.ErrorWithRetry
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,7 +36,8 @@ fun ProductoDetalleScreen(
                 is ProductoDetalleUiEvent.ShowSuccess ->
                     snackbarHostState.showSnackbar(event.message)
 
-                is ProductoDetalleUiEvent.NavigateBack -> onBack()
+                is ProductoDetalleUiEvent.NavigateBack ->
+                    onBack()
             }
         }
     }
@@ -58,64 +60,47 @@ fun ProductoDetalleScreen(
             )
         }
     ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
-            when {
-                state.isLoading -> {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                }
 
-                state.error != null -> {
-                    ProductoDetalleError(
-                        message = state.error ?: "Error desconocido",
-                        onBack = { viewModel.onEvent(ProductoDetalleEvent.NavigateBack) }
-                    )
+        when {
+            state.isLoading -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
                 }
+            }
 
-                state.producto != null -> {
-                    ProductoDetalleContent(
-                        state = state,
-                        onEvent = viewModel::onEvent
-                    )
-                }
+            state.error != null -> {
+                ErrorWithRetry(
+                    message = state.error ?: "Error desconocido",
+                    onRetry = { viewModel.onEvent(ProductoDetalleEvent.NavigateBack) }
+                )
+            }
+
+            state.producto != null -> {
+                ProductoDetalleContent(
+                    modifier = Modifier.padding(paddingValues),
+                    state = state,
+                    onEvent = viewModel::onEvent
+                )
             }
         }
     }
 }
 
 @Composable
-private fun ProductoDetalleError(message: String, onBack: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        Icon(
-            Icons.Default.Error,
-            contentDescription = null,
-            modifier = Modifier.size(64.dp),
-            tint = MaterialTheme.colorScheme.error
-        )
-
-        Text(message, style = MaterialTheme.typography.bodyLarge)
-
-        Button(onClick = onBack) { Text("Volver") }
-    }
-}
-
-@Composable
 private fun ProductoDetalleContent(
+    modifier: Modifier = Modifier,
     state: ProductoDetalleState,
     onEvent: (ProductoDetalleEvent) -> Unit
 ) {
     val producto = state.producto ?: return
 
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
     ) {
