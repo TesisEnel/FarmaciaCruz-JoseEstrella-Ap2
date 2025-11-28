@@ -26,41 +26,60 @@ fun MisOrdenesScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
 
     Scaffold(
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text("Mis Órdenes") }
-            )
-        }
+        topBar = { OrdenesTopBar() }
     ) { padding ->
-        Box(
-            Modifier
-                .fillMaxSize()
-                .padding(padding)
-        ) {
-            when {
-                state.isLoading -> {
-                    CircularProgressIndicator(
-                        modifier = Modifier.align(Alignment.Center)
-                    )
-                }
+        OrdenesContent(
+            state = state,
+            padding = padding,
+            onRetry = { viewModel.loadOrders() },
+            onOrderClick = onOrderClick
+        )
+    }
+}
 
-                state.error != null -> {
-                    ErrorSection(
-                        message = state.error ?: "Error desconocido",
-                        onRetry = { viewModel.loadOrders() }
-                    )
-                }
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun OrdenesTopBar() {
+    CenterAlignedTopAppBar(
+        title = { Text("Mis Órdenes") }
+    )
+}
 
-                state.ordenes.isEmpty() -> {
-                    EmptyOrdersSection()
-                }
+@Composable
+private fun OrdenesContent(
+    state: MisOrdenesState,
+    padding: PaddingValues,
+    onRetry: () -> Unit,
+    onOrderClick: (Int) -> Unit
+) {
+    Box(
+        Modifier
+            .fillMaxSize()
+            .padding(padding)
+    ) {
+        when {
+            state.isLoading -> {
+                CircularProgressIndicator(
+                    modifier = Modifier.align(Alignment.Center)
+                )
+            }
 
-                else -> {
-                    OrdersList(
-                        orders = state.ordenes,
-                        onOrderClick = onOrderClick
-                    )
-                }
+            state.error != null -> {
+                ErrorSection(
+                    message = state.error ?: "Error desconocido",
+                    onRetry = onRetry
+                )
+            }
+
+            state.ordenes.isEmpty() -> {
+                EmptyOrdersSection()
+            }
+
+            else -> {
+                OrdersList(
+                    orders = state.ordenes,
+                    onOrderClick = onOrderClick
+                )
             }
         }
     }

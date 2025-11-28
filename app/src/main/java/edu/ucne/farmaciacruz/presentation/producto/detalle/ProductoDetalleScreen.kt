@@ -29,18 +29,12 @@ fun ProductoDetalleScreen(
     LaunchedEffect(Unit) {
         viewModel.uiEvent.collect { event ->
             when (event) {
-                is ProductoDetalleUiEvent.ShowError -> {
-                    snackbarHostState.showSnackbar(
-                        message = event.message,
-                        duration = SnackbarDuration.Short
-                    )
-                }
-                is ProductoDetalleUiEvent.ShowSuccess -> {
-                    snackbarHostState.showSnackbar(
-                        message = event.message,
-                        duration = SnackbarDuration.Short
-                    )
-                }
+                is ProductoDetalleUiEvent.ShowError ->
+                    snackbarHostState.showSnackbar(event.message)
+
+                is ProductoDetalleUiEvent.ShowSuccess ->
+                    snackbarHostState.showSnackbar(event.message)
+
                 is ProductoDetalleUiEvent.NavigateBack -> onBack()
             }
         }
@@ -71,35 +65,16 @@ fun ProductoDetalleScreen(
         ) {
             when {
                 state.isLoading -> {
-                    CircularProgressIndicator(
-                        modifier = Modifier.align(Alignment.Center)
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                }
+
+                state.error != null -> {
+                    ProductoDetalleError(
+                        message = state.error ?: "Error desconocido",
+                        onBack = { viewModel.onEvent(ProductoDetalleEvent.NavigateBack) }
                     )
                 }
-                state.error != null -> {
-                    Column(
-                        modifier = Modifier
-                            .align(Alignment.Center)
-                            .padding(32.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        Icon(
-                            Icons.Default.Error,
-                            contentDescription = null,
-                            modifier = Modifier.size(64.dp),
-                            tint = MaterialTheme.colorScheme.error
-                        )
-                        Text(
-                            text = state.error ?: "Error desconocido",
-                            style = MaterialTheme.typography.bodyLarge
-                        )
-                        Button(
-                            onClick = { viewModel.onEvent(ProductoDetalleEvent.NavigateBack) }
-                        ) {
-                            Text("Volver")
-                        }
-                    }
-                }
+
                 state.producto != null -> {
                     ProductoDetalleContent(
                         state = state,
@@ -108,6 +83,27 @@ fun ProductoDetalleScreen(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun ProductoDetalleError(message: String, onBack: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .padding(32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Icon(
+            Icons.Default.Error,
+            contentDescription = null,
+            modifier = Modifier.size(64.dp),
+            tint = MaterialTheme.colorScheme.error
+        )
+
+        Text(message, style = MaterialTheme.typography.bodyLarge)
+
+        Button(onClick = onBack) { Text("Volver") }
     }
 }
 
@@ -123,19 +119,7 @@ private fun ProductoDetalleContent(
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
     ) {
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(300.dp),
-            color = MaterialTheme.colorScheme.surfaceVariant
-        ) {
-            AsyncImage(
-                model = producto.imagenUrl,
-                contentDescription = producto.nombre,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
-            )
-        }
+        ProductoDetalleHeader(producto.imagenUrl, producto.nombre)
 
         Column(
             modifier = Modifier
@@ -143,152 +127,193 @@ private fun ProductoDetalleContent(
                 .padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            ProductoDetalleCategoria(producto.categoria)
+            ProductoDetalleTitulo(producto.nombre)
+            ProductoDetallePrecio(producto.precio, producto.precioFormateado)
+            Divider()
+            ProductoDetalleDescripcion(producto.descripcion)
+            Divider()
+            ProductoDetalleCantidad(state.cantidad, onEvent)
+            ProductoDetalleSubtotal(producto.precio, state.cantidad)
+            ProductoDetalleAddToCartButton(onEvent)
+        }
+    }
+}
+
+@Composable
+private fun ProductoDetalleHeader(imageUrl: String, contentDescription: String) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(300.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant
+    ) {
+        AsyncImage(
+            model = imageUrl,
+            contentDescription = contentDescription,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop
+        )
+    }
+}
+
+@Composable
+private fun ProductoDetalleCategoria(categoria: String) {
+    Surface(
+        shape = RoundedCornerShape(8.dp),
+        color = MaterialTheme.colorScheme.primaryContainer
+    ) {
+        Text(
+            text = categoria,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onPrimaryContainer
+        )
+    }
+}
+
+@Composable
+private fun ProductoDetalleTitulo(nombre: String) {
+    Text(
+        text = nombre,
+        style = MaterialTheme.typography.headlineMedium,
+        fontWeight = FontWeight.Bold
+    )
+}
+
+@Composable
+private fun ProductoDetallePrecio(precio: Double, precioFormateado: String) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text(
+            text = precioFormateado,
+            style = MaterialTheme.typography.headlineLarge,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary
+        )
+
+        if (precio > 50) {
             Surface(
                 shape = RoundedCornerShape(8.dp),
-                color = MaterialTheme.colorScheme.primaryContainer
+                color = MaterialTheme.colorScheme.error
             ) {
                 Text(
-                    text = producto.categoria,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-            }
-
-            Text(
-                text = producto.nombre,
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold
-            )
-
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Text(
-                    text = producto.precioFormateado,
-                    style = MaterialTheme.typography.headlineLarge,
+                    "-15%",
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                    style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-
-                if (producto.precio > 50) {
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = MaterialTheme.colorScheme.error
-                    ) {
-                        Text(
-                            text = "-15%",
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onError
-                        )
-                    }
-                }
-            }
-
-            Divider()
-
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(
-                    text = "Descripción",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Text(
-                    text = producto.descripcion,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
-            Divider()
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Cantidad",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    IconButton(
-                        onClick = {
-                            ProductoDetalleEvent.UpdateCantidad(state.cantidad - 1)
-                        },
-                        enabled = state.cantidad > 1
-                    ) {
-                        Icon(Icons.Default.Remove, contentDescription = "Disminuir")
-                    }
-
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = MaterialTheme.colorScheme.secondaryContainer
-                    ) {
-                        Text(
-                            text = state.cantidad.toString(),
-                            modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-
-                    IconButton(
-                        onClick = {
-                            ProductoDetalleEvent.UpdateCantidad(state.cantidad + 1)
-                        }
-                    ) {
-                        Icon(Icons.Default.Add, contentDescription = "Aumentar")
-                    }
-                }
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Subtotal",
-                    style = MaterialTheme.typography.titleMedium
-                )
-                Text(
-                    text = "$${String.format("%.2f", producto.precio * state.cantidad)}",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Button(
-                onClick = { onEvent(ProductoDetalleEvent.AddToCart) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Icon(
-                    Icons.Default.ShoppingCart,
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Agregar al Carrito",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
+                    color = MaterialTheme.colorScheme.onError
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun ProductoDetalleDescripcion(descripcion: String) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            text = "Descripción",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold
+        )
+        Text(
+            descripcion,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Composable
+private fun ProductoDetalleCantidad(
+    cantidad: Int,
+    onEvent: (ProductoDetalleEvent) -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = "Cantidad",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold
+        )
+
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            IconButton(
+                onClick = {
+                    onEvent(ProductoDetalleEvent.UpdateCantidad(cantidad - 1))
+                },
+                enabled = cantidad > 1
+            ) {
+                Icon(Icons.Default.Remove, contentDescription = "Disminuir")
+            }
+
+            Surface(
+                shape = RoundedCornerShape(8.dp),
+                color = MaterialTheme.colorScheme.secondaryContainer
+            ) {
+                Text(
+                    cantidad.toString(),
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            IconButton(
+                onClick = {
+                    onEvent(ProductoDetalleEvent.UpdateCantidad(cantidad + 1))
+                }
+            ) {
+                Icon(Icons.Default.Add, contentDescription = "Aumentar")
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProductoDetalleSubtotal(precio: Double, cantidad: Int) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text("Subtotal", style = MaterialTheme.typography.titleMedium)
+
+        Text(
+            "$${String.format("%.2f", precio * cantidad)}",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary
+        )
+    }
+}
+
+@Composable
+private fun ProductoDetalleAddToCartButton(
+    onEvent: (ProductoDetalleEvent) -> Unit
+) {
+    Button(
+        onClick = { onEvent(ProductoDetalleEvent.AddToCart) },
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(56.dp),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Icon(Icons.Default.ShoppingCart, contentDescription = null)
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            "Agregar al Carrito",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold
+        )
     }
 }

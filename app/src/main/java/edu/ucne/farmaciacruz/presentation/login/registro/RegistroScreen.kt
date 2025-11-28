@@ -28,6 +28,7 @@ import edu.ucne.farmaciacruz.ui.theme.onPrimaryContainerDarkHighContrast
 sealed class RegistroUiEvent {
     data object NavigateToHome : RegistroUiEvent()
 }
+
 @Composable
 fun RegistroScreen(
     onRegistroSuccess: () -> Unit,
@@ -38,10 +39,8 @@ fun RegistroScreen(
 
     LaunchedEffect(Unit) {
         viewModel.uiEvent.collect { event ->
-            when (event) {
-                is RegistroUiEvent.NavigateToHome -> {
-                    onRegistroSuccess()
-                }
+            if (event is RegistroUiEvent.NavigateToHome) {
+                onRegistroSuccess()
             }
         }
     }
@@ -59,9 +58,6 @@ private fun RegistroContent(
     onEvent: (RegistroEvent) -> Unit,
     onBackToLogin: () -> Unit
 ) {
-    var passwordVisible by remember { mutableStateOf(false) }
-    var confirmarPasswordVisible by remember { mutableStateOf(false) }
-
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -76,303 +72,297 @@ private fun RegistroContent(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Surface(
-                modifier = Modifier.size(80.dp),
-                shape = RoundedCornerShape(20.dp),
-                color = MaterialTheme.colorScheme.surface
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Image(
-                        painter = painterResource(id = R.drawable.logo_farmacia_cruz),
-                        contentDescription = "Farmacia Cruz Logo",
-                        modifier = Modifier.size(180.dp)
-                    )
-                }
+
+            LogoHeader()
+            RegistroTitle()
+            Spacer(Modifier.height(24.dp))
+
+            RegistroForm(
+                state = state,
+                onEvent = onEvent,
+                onBackToLogin = onBackToLogin
+            )
+
+            ErrorCardIfNeeded(
+                error = state.error,
+                onClear = { onEvent(RegistroEvent.ClearError) }
+            )
+        }
+    }
+}
+
+@Composable
+private fun LogoHeader() {
+    Surface(
+        modifier = Modifier.size(80.dp),
+        shape = RoundedCornerShape(20.dp),
+        color = MaterialTheme.colorScheme.surface
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Image(
+                painter = painterResource(id = R.drawable.logo_farmacia_cruz),
+                contentDescription = "Farmacia Cruz Logo",
+                modifier = Modifier.size(180.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun RegistroTitle() {
+    Spacer(modifier = Modifier.height(16.dp))
+
+    Text(
+        text = "Crear Cuenta",
+        style = MaterialTheme.typography.headlineSmall,
+        fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.onPrimary
+    )
+
+    Spacer(modifier = Modifier.height(8.dp))
+
+    Text(
+        text = "Únete a Farmacia Cruz",
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.9f)
+    )
+}
+
+@Composable
+private fun RegistroForm(
+    state: RegistroState,
+    onEvent: (RegistroEvent) -> Unit,
+    onBackToLogin: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+    ) {
+
+        var passwordVisible by remember { mutableStateOf(false) }
+        var confirmarPasswordVisible by remember { mutableStateOf(false) }
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+
+            RegistroTextField(
+                label = "Nombre",
+                value = state.nombre,
+                placeholder = "José Gabriel",
+                icon = Icons.Default.Person,
+                onChange = { onEvent(RegistroEvent.NombreChanged(it)) },
+                enabled = !state.isLoading
+            )
+
+            RegistroTextField(
+                label = "Apellido",
+                value = state.apellido,
+                placeholder = "Estrella",
+                icon = Icons.Default.Person,
+                onChange = { onEvent(RegistroEvent.ApellidoChanged(it)) },
+                enabled = !state.isLoading
+            )
+
+            RegistroTextField(
+                label = "Correo electrónico",
+                value = state.email,
+                placeholder = "ejemplo@correo.com",
+                icon = Icons.Default.Email,
+                onChange = { onEvent(RegistroEvent.EmailChanged(it)) },
+                keyboardType = KeyboardType.Email,
+                enabled = !state.isLoading
+            )
+
+            RegistroTextField(
+                label = "Teléfono",
+                value = state.telefono,
+                placeholder = "+1 829 230 1111",
+                icon = Icons.Default.Phone,
+                onChange = { onEvent(RegistroEvent.TelefonoChanged(it)) },
+                keyboardType = KeyboardType.Phone,
+                enabled = !state.isLoading
+            )
+
+            RegistroPasswordField(
+                label = "Contraseña",
+                value = state.password,
+                visible = passwordVisible,
+                onToggleVisibility = { passwordVisible = !passwordVisible },
+                onChange = { onEvent(RegistroEvent.PasswordChanged(it)) },
+                enabled = !state.isLoading
+            )
+
+            RegistroPasswordField(
+                label = "Confirmar contraseña",
+                value = state.confirmarPassword,
+                visible = confirmarPasswordVisible,
+                onToggleVisibility = { confirmarPasswordVisible = !confirmarPasswordVisible },
+                onChange = { onEvent(RegistroEvent.ConfirmarPasswordChanged(it)) },
+                enabled = !state.isLoading
+            )
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Checkbox(
+                    checked = state.aceptaTerminos,
+                    onCheckedChange = { onEvent(RegistroEvent.TerminosChanged(it)) },
+                    enabled = !state.isLoading
+                )
+                Text(
+                    text = "He leído y acepto los términos y condiciones de Farmacia Cruz",
+                    style = MaterialTheme.typography.bodySmall
+                )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            RegistroSubmitButton(
+                isLoading = state.isLoading,
+                onClick = { onEvent(RegistroEvent.RegistrarClicked) }
+            )
 
-            Text(
-                text = "Crear Cuenta",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
+            AlreadyHaveAccount(onBackToLogin)
+        }
+    }
+}
+
+@Composable
+private fun RegistroTextField(
+    label: String,
+    value: String,
+    placeholder: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    onChange: (String) -> Unit,
+    enabled: Boolean,
+    keyboardType: KeyboardType = KeyboardType.Text
+) {
+    Text(label, fontWeight = FontWeight.Medium)
+
+    OutlinedTextField(
+        value = value,
+        onValueChange = onChange,
+        modifier = Modifier.fillMaxWidth(),
+        placeholder = { Text(placeholder) },
+        leadingIcon = { Icon(icon, null) },
+        singleLine = true,
+        enabled = enabled,
+        keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+        shape = RoundedCornerShape(12.dp),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant
+        )
+    )
+}
+
+@Composable
+private fun RegistroPasswordField(
+    label: String,
+    value: String,
+    visible: Boolean,
+    onToggleVisibility: () -> Unit,
+    onChange: (String) -> Unit,
+    enabled: Boolean
+) {
+    Text(label, fontWeight = FontWeight.Medium)
+
+    OutlinedTextField(
+        value = value,
+        onValueChange = onChange,
+        modifier = Modifier.fillMaxWidth(),
+        placeholder = { Text("········") },
+        leadingIcon = { Icon(Icons.Default.Lock, null) },
+        trailingIcon = {
+            IconButton(onClick = onToggleVisibility) {
+                Icon(
+                    imageVector = if (visible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                    contentDescription = null
+                )
+            }
+        },
+        visualTransformation = if (visible) VisualTransformation.None else PasswordVisualTransformation(),
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+        singleLine = true,
+        enabled = enabled,
+        shape = RoundedCornerShape(12.dp),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant
+        )
+    )
+}
+
+@Composable
+private fun RegistroSubmitButton(
+    isLoading: Boolean,
+    onClick: () -> Unit
+) {
+    Button(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(50.dp),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        if (isLoading) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(24.dp),
                 color = MaterialTheme.colorScheme.onPrimary
             )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
+        } else {
             Text(
-                text = "Únete a Farmacia Cruz",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.9f)
+                "Registrarse",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold
             )
+        }
+    }
+}
 
-            Spacer(modifier = Modifier.height(24.dp))
+@Composable
+private fun AlreadyHaveAccount(onBackToLogin: () -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.Center
+    ) {
+        Text("¿Ya tienes cuenta?", style = MaterialTheme.typography.bodyMedium)
+        TextButton(onClick = onBackToLogin) {
+            Text("Inicia sesión", color = MaterialTheme.colorScheme.primary)
+        }
+    }
+}
 
-            Card(
+@Composable
+private fun ErrorCardIfNeeded(error: String?, onClear: () -> Unit) {
+    error?.let {
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.errorContainer
+            ),
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .wrapContentHeight(),
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(24.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Text(
-                        text = "Nombre",
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Medium
-                    )
-                    OutlinedTextField(
-                        value = state.nombre,
-                        onValueChange = { onEvent(RegistroEvent.NombreChanged(it)) },
-                        modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("José Gabriel") },
-                        leadingIcon = { Icon(Icons.Default.Person, null) },
-                        singleLine = true,
-                        enabled = !state.isLoading,
-                        shape = RoundedCornerShape(12.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant
-                        )
-                    )
-
-                    Text(
-                        text = "Apellido",
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Medium
-                    )
-                    OutlinedTextField(
-                        value = state.apellido,
-                        onValueChange = { onEvent(RegistroEvent.ApellidoChanged(it)) },
-                        modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("Estrella") },
-                        leadingIcon = { Icon(Icons.Default.Person, null) },
-                        singleLine = true,
-                        enabled = !state.isLoading,
-                        shape = RoundedCornerShape(12.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant
-                        )
-                    )
-
-                    Text(
-                        text = "Correo electrónico",
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Medium
-                    )
-                    OutlinedTextField(
-                        value = state.email,
-                        onValueChange = { onEvent(RegistroEvent.EmailChanged(it)) },
-                        modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("ejemplo@correo.com") },
-                        leadingIcon = { Icon(Icons.Default.Email, null) },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                        singleLine = true,
-                        enabled = !state.isLoading,
-                        shape = RoundedCornerShape(12.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant
-                        )
-                    )
-
-                    Text(
-                        text = "Teléfono",
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Medium
-                    )
-                    OutlinedTextField(
-                        value = state.telefono,
-                        onValueChange = { onEvent(RegistroEvent.TelefonoChanged(it)) },
-                        modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("+1 829 230 1111") },
-                        leadingIcon = { Icon(Icons.Default.Phone, null) },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                        singleLine = true,
-                        enabled = !state.isLoading,
-                        shape = RoundedCornerShape(12.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant
-                        )
-                    )
-
-                    Text(
-                        text = "Contraseña",
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Medium
-                    )
-                    OutlinedTextField(
-                        value = state.password,
-                        onValueChange = { onEvent(RegistroEvent.PasswordChanged(it)) },
-                        modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("········") },
-                        leadingIcon = { Icon(Icons.Default.Lock, null) },
-                        trailingIcon = {
-                            IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                                Icon(
-                                    if (passwordVisible) Icons.Default.Visibility
-                                    else Icons.Default.VisibilityOff,
-                                    null
-                                )
-                            }
-                        },
-                        visualTransformation = if (passwordVisible)
-                            VisualTransformation.None else PasswordVisualTransformation(),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                        singleLine = true,
-                        enabled = !state.isLoading,
-                        shape = RoundedCornerShape(12.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant
-                        )
-                    )
-
-                    Text(
-                        text = "Confirmar contraseña",
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Medium
-                    )
-                    OutlinedTextField(
-                        value = state.confirmarPassword,
-                        onValueChange = { onEvent(RegistroEvent.ConfirmarPasswordChanged(it)) },
-                        modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("········") },
-                        leadingIcon = { Icon(Icons.Default.Lock, null) },
-                        trailingIcon = {
-                            IconButton(onClick = {
-                                confirmarPasswordVisible = !confirmarPasswordVisible
-                            }) {
-                                Icon(
-                                    if (confirmarPasswordVisible) Icons.Default.Visibility
-                                    else Icons.Default.VisibilityOff,
-                                    null
-                                )
-                            }
-                        },
-                        visualTransformation = if (confirmarPasswordVisible)
-                            VisualTransformation.None else PasswordVisualTransformation(),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                        singleLine = true,
-                        enabled = !state.isLoading,
-                        shape = RoundedCornerShape(12.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant
-                        )
-                    )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Checkbox(
-                            checked = state.aceptaTerminos,
-                            onCheckedChange = { onEvent(RegistroEvent.TerminosChanged(it)) },
-                            enabled = !state.isLoading
-                        )
-                        Text(
-                            text = "He leído y acepto los términos y condiciones de Farmacia Cruz",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Button(
-                        onClick = { onEvent(RegistroEvent.RegistrarClicked) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(50.dp),
-                        enabled = !state.isLoading,
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        if (state.isLoading) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(24.dp),
-                                color = MaterialTheme.colorScheme.onPrimary,
-                                strokeWidth = 2.dp
-                            )
-                        } else {
-                            Text(
-                                "Registrarse",
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        Text(
-                            text = "¿Ya tienes cuenta? ",
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                        TextButton(
-                            onClick = onBackToLogin,
-                            contentPadding = PaddingValues(0.dp)
-                        ) {
-                            Text(
-                                text = "Inicia sesión",
-                                color = MaterialTheme.colorScheme.primary,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        }
-                    }
-                }
-            }
-
-            state.error?.let { error ->
-                Spacer(modifier = Modifier.height(16.dp))
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.errorContainer
-                    ),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = error,
-                            color = MaterialTheme.colorScheme.onErrorContainer,
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.weight(1f)
-                        )
-                        IconButton(
-                            onClick = { onEvent(RegistroEvent.ClearError) },
-                            modifier = Modifier.size(20.dp)
-                        ) {
-                            Text(
-                                "✕",
-                                color = MaterialTheme.colorScheme.onErrorContainer,
-                                style = MaterialTheme.typography.titleMedium
-                            )
-                        }
-                    }
+                Text(
+                    text = error,
+                    color = MaterialTheme.colorScheme.onErrorContainer,
+                    modifier = Modifier.weight(1f)
+                )
+                IconButton(onClick = onClear) {
+                    Text("✕", color = MaterialTheme.colorScheme.onErrorContainer)
                 }
             }
         }
