@@ -13,8 +13,10 @@ import edu.ucne.farmaciacruz.data.remote.ApiService
 import edu.ucne.farmaciacruz.data.remote.AuthInterceptor
 import edu.ucne.farmaciacruz.data.remote.PayPalApiService
 import edu.ucne.farmaciacruz.data.repository.CarritoRepositoryImpl
+import edu.ucne.farmaciacruz.data.repository.OrderRepositoryImpl
 import edu.ucne.farmaciacruz.data.repository.PreferencesRepositoryImpl
 import edu.ucne.farmaciacruz.domain.repository.CarritoRepository
+import edu.ucne.farmaciacruz.domain.repository.OrderRepository
 import edu.ucne.farmaciacruz.domain.repository.PreferencesRepository
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -140,4 +142,12 @@ object NetworkModule {
     fun providePreferencesRepository(
         prefs: PreferencesManager
     ): PreferencesRepository = PreferencesRepositoryImpl(prefs)
+
+    @Provides
+    @Singleton
+    fun provideOrderRepository(
+        apiService: ApiService
+    ): OrderRepository {
+        return OrderRepositoryImpl(apiService)
+    }
 }
