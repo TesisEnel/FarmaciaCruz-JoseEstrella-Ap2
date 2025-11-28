@@ -1,5 +1,6 @@
 package edu.ucne.farmaciacruz.data.repository
 
+import edu.ucne.farmaciacruz.core.common.ErrorMessages
 import edu.ucne.farmaciacruz.data.mapper.createOrderDto
 import edu.ucne.farmaciacruz.data.mapper.toDomain
 import edu.ucne.farmaciacruz.data.remote.ApiService
@@ -27,9 +28,9 @@ class OrderRepositoryImpl @Inject constructor(
         paypalOrderId: String,
         paypalPayerId: String?
     ): Flow<Resource<Order>> = flow {
-        try {
-            emit(Resource.Loading())
+        emit(Resource.Loading())
 
+        try {
             val dto = createOrderDto(
                 usuarioId = usuarioId,
                 carrito = carrito,
@@ -41,109 +42,107 @@ class OrderRepositoryImpl @Inject constructor(
             val response = apiService.createOrder(dto)
 
             if (response.isSuccessful && response.body() != null) {
-                val orderResponse = response.body()!!.data!!
-                emit(Resource.Success(orderResponse.toDomain()))
+                emit(Resource.Success(response.body()!!.data!!.toDomain()))
             } else {
-                val errorMessage = when (response.code()) {
+                val errorMsg = when (response.code()) {
+                    401 -> ErrorMessages.NO_AUTORIZADO
                     400 -> "Datos de orden inválidos"
-                    401 -> "No autorizado"
-                    404 -> "Endpoint no encontrado"
-                    else -> "Error al crear la orden: ${response.message()}"
+                    404 -> "Orden no encontrada"
+                    else -> ErrorMessages.ERROR_DESCONOCIDO
                 }
-                emit(Resource.Error(errorMessage))
+                emit(Resource.Error(errorMsg))
             }
+
         } catch (e: HttpException) {
-            emit(Resource.Error("Error de red: ${e.message()}"))
+            emit(Resource.Error("${ErrorMessages.ERROR_RED}: ${e.message()}"))
         } catch (e: IOException) {
-            emit(Resource.Error("Error de conexión. Verifica tu internet"))
+            emit(Resource.Error(ErrorMessages.ERROR_CONEXION))
         } catch (e: Exception) {
-            emit(Resource.Error(e.message ?: "Error desconocido"))
+            emit(Resource.Error(ErrorMessages.ERROR_DESCONOCIDO))
         }
     }
 
-    override suspend fun getOrder(orderId: Int): Flow<Resource<Order>> = flow {
-        try {
-            emit(Resource.Loading())
+    override fun getOrder(orderId: Int): Flow<Resource<Order>> = flow {
+        emit(Resource.Loading())
 
+        try {
             val response = apiService.getOrder(orderId)
 
             if (response.isSuccessful && response.body() != null) {
-                val order = response.body()!!.data!!.toDomain()
-                emit(Resource.Success(order))
+                emit(Resource.Success(response.body()!!.data!!.toDomain()))
             } else {
-                val errorMessage = when (response.code()) {
+                val msg = when (response.code()) {
                     404 -> "Orden no encontrada"
-                    401 -> "No autorizado"
-                    403 -> "No tienes permisos para ver esta orden"
-                    else -> "Error al obtener la orden"
+                    401 -> ErrorMessages.NO_AUTORIZADO
+                    else -> ErrorMessages.ERROR_DESCONOCIDO
                 }
-                emit(Resource.Error(errorMessage))
+                emit(Resource.Error(msg))
             }
+
         } catch (e: HttpException) {
-            emit(Resource.Error("Error de red: ${e.message()}"))
+            emit(Resource.Error("${ErrorMessages.ERROR_RED}: ${e.message()}"))
         } catch (e: IOException) {
-            emit(Resource.Error("Error de conexión"))
+            emit(Resource.Error(ErrorMessages.ERROR_CONEXION))
         } catch (e: Exception) {
-            emit(Resource.Error(e.message ?: "Error desconocido"))
+            emit(Resource.Error(ErrorMessages.ERROR_DESCONOCIDO))
         }
     }
 
     override fun getUserOrders(usuarioId: Int): Flow<Resource<List<Order>>> = flow {
-        try {
-            emit(Resource.Loading())
+        emit(Resource.Loading())
 
+        try {
             val response = apiService.getUserOrders(usuarioId)
 
             if (response.isSuccessful && response.body() != null) {
-                val orders = response.body()!!.map { it.toDomain() }
-                emit(Resource.Success(orders))
+                val list = response.body()!!.map { it.toDomain() }
+                emit(Resource.Success(list))
             } else {
-                val errorMessage = when (response.code()) {
-                    401 -> "No autorizado"
+                val msg = when (response.code()) {
+                    401 -> ErrorMessages.NO_AUTORIZADO
                     403 -> "No tienes permisos"
                     404 -> "No se encontraron órdenes"
-                    else -> "Error al obtener órdenes"
+                    else -> ErrorMessages.ERROR_DESCONOCIDO
                 }
-                emit(Resource.Error(errorMessage))
+                emit(Resource.Error(msg))
             }
+
         } catch (e: HttpException) {
-            emit(Resource.Error("Error de red: ${e.message()}"))
+            emit(Resource.Error("${ErrorMessages.ERROR_RED}: ${e.message()}"))
         } catch (e: IOException) {
-            emit(Resource.Error("Error de conexión"))
+            emit(Resource.Error(ErrorMessages.ERROR_CONEXION))
         } catch (e: Exception) {
-            emit(Resource.Error(e.message ?: "Error desconocido"))
+            emit(Resource.Error(ErrorMessages.ERROR_DESCONOCIDO))
         }
     }
 
-    override suspend fun updateOrderStatus(
+    override fun updateOrderStatus(
         orderId: Int,
         status: String
     ): Flow<Resource<Unit>> = flow {
-        try {
-            emit(Resource.Loading())
+        emit(Resource.Loading())
 
-            val response = apiService.updateOrderStatus(
-                orderId,
-                UpdateOrderStatusRequest(status)
-            )
+        try {
+            val response = apiService.updateOrderStatus(orderId, UpdateOrderStatusRequest(status))
 
             if (response.isSuccessful) {
                 emit(Resource.Success(Unit))
             } else {
-                val errorMessage = when (response.code()) {
-                    401 -> "No autorizado"
+                val msg = when (response.code()) {
+                    401 -> ErrorMessages.NO_AUTORIZADO
                     403 -> "Solo administradores pueden actualizar órdenes"
                     404 -> "Orden no encontrada"
-                    else -> "Error al actualizar estado"
+                    else -> ErrorMessages.ERROR_DESCONOCIDO
                 }
-                emit(Resource.Error(errorMessage))
+                emit(Resource.Error(msg))
             }
+
         } catch (e: HttpException) {
-            emit(Resource.Error("Error de red: ${e.message()}"))
+            emit(Resource.Error("${ErrorMessages.ERROR_RED}: ${e.message()}"))
         } catch (e: IOException) {
-            emit(Resource.Error("Error de conexión"))
+            emit(Resource.Error(ErrorMessages.ERROR_CONEXION))
         } catch (e: Exception) {
-            emit(Resource.Error(e.message ?: "Error desconocido"))
+            emit(Resource.Error(ErrorMessages.ERROR_DESCONOCIDO))
         }
     }
 }

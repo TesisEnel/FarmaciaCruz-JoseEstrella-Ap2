@@ -7,17 +7,19 @@ import edu.ucne.farmaciacruz.domain.model.Resource
 import kotlinx.coroutines.flow.Flow
 
 interface PaymentRepository {
+
     fun createPayPalOrder(
         usuarioId: Int,
         items: List<CarritoItem>,
         total: Double
     ): Flow<Resource<String>>
+
     fun capturePayPalPayment(
         paypalOrderId: String,
         localOrderId: String
     ): Flow<Resource<PaymentResult>>
 
-    suspend fun createLocalOrder(
+    fun createLocalOrder(
         usuarioId: Int,
         items: List<CarritoItem>,
         total: Double,

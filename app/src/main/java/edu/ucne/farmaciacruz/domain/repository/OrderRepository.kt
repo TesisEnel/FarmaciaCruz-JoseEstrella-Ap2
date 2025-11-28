@@ -15,11 +15,11 @@ interface OrderRepository {
         paypalPayerId: String? = null
     ): Flow<Resource<Order>>
 
-    suspend fun getOrder(orderId: Int): Flow<Resource<Order>>
+    fun getOrder(orderId: Int): Flow<Resource<Order>>
 
     fun getUserOrders(usuarioId: Int): Flow<Resource<List<Order>>>
 
-    suspend fun updateOrderStatus(
+    fun updateOrderStatus(
         orderId: Int,
         status: String
     ): Flow<Resource<Unit>>

@@ -1,5 +1,7 @@
 package edu.ucne.farmaciacruz.data.repository
 
+import edu.ucne.farmaciacruz.core.common.ErrorMessages
+import edu.ucne.farmaciacruz.core.common.ProductMessages
 import edu.ucne.farmaciacruz.data.remote.ApiService
 import edu.ucne.farmaciacruz.data.remote.dto.ProductoDto
 import edu.ucne.farmaciacruz.data.remote.dto.CreateProductoRequest
@@ -19,85 +21,85 @@ class ProductRepositoryImpl @Inject constructor(
 ) : ProductRepository {
 
     override fun getProductos(): Flow<Resource<List<Producto>>> = flow {
-        try {
-            emit(Resource.Loading())
+        emit(Resource.Loading())
 
+        try {
             val response = apiService.getProductos()
 
             if (response.isSuccessful && response.body() != null) {
                 val productos = response.body()!!.map { it.toDomain() }
                 emit(Resource.Success(productos))
             } else {
-                val errorMessage = when (response.code()) {
-                    401 -> "No autorizado. Por favor, inicia sesión nuevamente"
-                    403 -> "No tienes permisos para ver los productos"
-                    404 -> "No se encontraron productos"
-                    500 -> "Error del servidor. Intenta más tarde"
-                    else -> "Error al cargar productos: ${response.message()}"
+                val message = when (response.code()) {
+                    401 -> ProductMessages.NO_AUTORIZADO
+                    403 -> ProductMessages.NO_PERMISOS
+                    404 -> ProductMessages.NO_PRODUCTOS
+                    else -> ProductMessages.ERROR_CARGAR
                 }
-                emit(Resource.Error(errorMessage))
+                emit(Resource.Error(message))
             }
+
         } catch (e: HttpException) {
-            emit(Resource.Error("Error de red: ${e.message()}"))
+            emit(Resource.Error("${ErrorMessages.ERROR_RED}: ${e.message()}"))
         } catch (e: IOException) {
-            emit(Resource.Error("Error de conexión. Verifica tu internet"))
+            emit(Resource.Error(ErrorMessages.ERROR_CONEXION))
         } catch (e: Exception) {
-            emit(Resource.Error("Error inesperado: ${e.message ?: "Desconocido"}"))
+            emit(Resource.Error(ErrorMessages.ERROR_DESCONOCIDO))
         }
     }
 
     override fun getProducto(id: Int): Flow<Resource<Producto>> = flow {
-        try {
-            emit(Resource.Loading())
+        emit(Resource.Loading())
 
+        try {
             val response = apiService.getProducto(id)
 
             if (response.isSuccessful && response.body() != null) {
-                val producto = response.body()!!.toDomain()
-                emit(Resource.Success(producto))
+                emit(Resource.Success(response.body()!!.toDomain()))
             } else {
-                val errorMessage = when (response.code()) {
-                    404 -> "Producto no encontrado"
-                    401 -> "No autorizado"
-                    else -> "Error al cargar el producto"
+                val message = when (response.code()) {
+                    404 -> ProductMessages.PRODUCTO_NO_ENCONTRADO
+                    401 -> ProductMessages.NO_AUTORIZADO
+                    else -> ProductMessages.ERROR_CARGAR
                 }
-                emit(Resource.Error(errorMessage))
+                emit(Resource.Error(message))
             }
+
         } catch (e: HttpException) {
-            emit(Resource.Error("Error de red: ${e.message()}"))
+            emit(Resource.Error("${ErrorMessages.ERROR_RED}: ${e.message()}"))
         } catch (e: IOException) {
-            emit(Resource.Error("Error de conexión"))
+            emit(Resource.Error(ErrorMessages.ERROR_CONEXION))
         } catch (e: Exception) {
-            emit(Resource.Error(e.message ?: "Error desconocido"))
+            emit(Resource.Error(ErrorMessages.ERROR_DESCONOCIDO))
         }
     }
 
-
     override fun getProductosPorCategoria(categoria: String): Flow<Resource<List<Producto>>> = flow {
-        try {
-            emit(Resource.Loading())
+        emit(Resource.Loading())
 
+        try {
             val response = apiService.getProductosPorCategoria(categoria)
 
             if (response.isSuccessful && response.body() != null) {
                 val productos = response.body()!!.map { it.toDomain() }
                 emit(Resource.Success(productos))
             } else {
-                emit(Resource.Error("Error al cargar productos de la categoría"))
+                emit(Resource.Error(ProductMessages.ERROR_CARGAR))
             }
+
         } catch (e: HttpException) {
-            emit(Resource.Error("Error de red: ${e.message()}"))
+            emit(Resource.Error("${ErrorMessages.ERROR_RED}: ${e.message()}"))
         } catch (e: IOException) {
-            emit(Resource.Error("Error de conexión"))
+            emit(Resource.Error(ErrorMessages.ERROR_CONEXION))
         } catch (e: Exception) {
-            emit(Resource.Error(e.message ?: "Error desconocido"))
+            emit(Resource.Error(ErrorMessages.ERROR_DESCONOCIDO))
         }
     }
 
     override fun searchProductos(query: String): Flow<Resource<List<Producto>>> = flow {
-        try {
-            emit(Resource.Loading())
+        emit(Resource.Loading())
 
+        try {
             if (query.isBlank()) {
                 emit(Resource.Success(emptyList()))
                 return@flow
@@ -106,8 +108,7 @@ class ProductRepositoryImpl @Inject constructor(
             val response = apiService.getProductos()
 
             if (response.isSuccessful && response.body() != null) {
-                val allProductos = response.body()!!
-                val filteredProductos = allProductos
+                val filtered = response.body()!!
                     .filter { producto ->
                         producto.nombre.contains(query, ignoreCase = true) ||
                                 producto.descripcion.contains(query, ignoreCase = true) ||
@@ -115,23 +116,24 @@ class ProductRepositoryImpl @Inject constructor(
                     }
                     .map { it.toDomain() }
 
-                emit(Resource.Success(filteredProductos))
+                emit(Resource.Success(filtered))
             } else {
-                emit(Resource.Error("Error al buscar productos"))
+                emit(Resource.Error(ProductMessages.NO_COINCIDENCIAS))
             }
+
         } catch (e: HttpException) {
-            emit(Resource.Error("Error de red: ${e.message()}"))
+            emit(Resource.Error("${ErrorMessages.ERROR_RED}: ${e.message()}"))
         } catch (e: IOException) {
-            emit(Resource.Error("Error de conexión"))
+            emit(Resource.Error(ErrorMessages.ERROR_CONEXION))
         } catch (e: Exception) {
-            emit(Resource.Error(e.message ?: "Error desconocido"))
+            emit(Resource.Error(ErrorMessages.ERROR_DESCONOCIDO))
         }
     }
 
-    override suspend fun getCategorias(): Flow<Resource<List<String>>> = flow {
-        try {
-            emit(Resource.Loading())
+    override fun getCategorias(): Flow<Resource<List<String>>> = flow {
+        emit(Resource.Loading())
 
+        try {
             val response = apiService.getProductos()
 
             if (response.isSuccessful && response.body() != null) {
@@ -142,23 +144,25 @@ class ProductRepositoryImpl @Inject constructor(
 
                 emit(Resource.Success(categorias))
             } else {
-                emit(Resource.Error("Error al cargar categorías"))
+                emit(Resource.Error(ProductMessages.NO_PRODUCTOS))
             }
+
         } catch (e: Exception) {
-            emit(Resource.Error(e.message ?: "Error desconocido"))
+            emit(Resource.Error(ErrorMessages.ERROR_DESCONOCIDO))
         }
     }
 
-    override suspend fun createProducto(
+    override fun createProducto(
         nombre: String,
         categoria: String,
         descripcion: String,
         precio: Double,
         imagenUrl: String
     ): Flow<Resource<Producto>> = flow {
-        try {
-            emit(Resource.Loading())
 
+        emit(Resource.Loading())
+
+        try {
             val request = CreateProductoRequest(
                 nombre = nombre,
                 categoria = categoria,
@@ -170,27 +174,26 @@ class ProductRepositoryImpl @Inject constructor(
             val response = apiService.createProducto(request)
 
             if (response.isSuccessful && response.body() != null) {
-                val producto = response.body()!!.data!!.toDomain()
-                emit(Resource.Success(producto))
+                emit(Resource.Success(response.body()!!.data!!.toDomain()))
             } else {
-                val errorMessage = when (response.code()) {
-                    401 -> "No autorizado"
-                    403 -> "No tienes permisos para crear productos"
+                val msg = when (response.code()) {
+                    401 -> ProductMessages.NO_AUTORIZADO
+                    403 -> ProductMessages.NO_PERMISOS
                     409 -> "Ya existe un producto con ese nombre"
-                    else -> "Error al crear el producto"
+                    else -> ProductMessages.ERROR_CREAR
                 }
-                emit(Resource.Error(errorMessage))
+                emit(Resource.Error(msg))
             }
+
         } catch (e: Exception) {
-            emit(Resource.Error(e.message ?: "Error desconocido"))
+            emit(Resource.Error(ErrorMessages.ERROR_DESCONOCIDO))
         }
     }
 
+    override fun updateProducto(producto: Producto): Flow<Resource<Unit>> = flow {
+        emit(Resource.Loading())
 
-    override suspend fun updateProducto(producto: Producto): Flow<Resource<Unit>> = flow {
         try {
-            emit(Resource.Loading())
-
             val dto = ProductoDto(
                 productoId = producto.id,
                 nombre = producto.nombre,
@@ -205,37 +208,37 @@ class ProductRepositoryImpl @Inject constructor(
             if (response.isSuccessful) {
                 emit(Resource.Success(Unit))
             } else {
-                emit(Resource.Error("Error al actualizar el producto"))
+                emit(Resource.Error(ProductMessages.ERROR_ACTUALIZAR))
             }
+
         } catch (e: Exception) {
-            emit(Resource.Error(e.message ?: "Error desconocido"))
+            emit(Resource.Error(ErrorMessages.ERROR_DESCONOCIDO))
         }
     }
 
+    override fun deleteProducto(id: Int): Flow<Resource<Unit>> = flow {
+        emit(Resource.Loading())
 
-    override suspend fun deleteProducto(id: Int): Flow<Resource<Unit>> = flow {
         try {
-            emit(Resource.Loading())
-
             val response = apiService.deleteProducto(id)
 
             if (response.isSuccessful) {
                 emit(Resource.Success(Unit))
             } else {
-                val errorMessage = when (response.code()) {
-                    401 -> "No autorizado"
-                    403 -> "Solo administradores pueden eliminar productos"
-                    404 -> "Producto no encontrado"
-                    else -> "Error al eliminar el producto"
+                val msg = when (response.code()) {
+                    401 -> ProductMessages.NO_AUTORIZADO
+                    403 -> ProductMessages.NO_PERMISOS
+                    404 -> ProductMessages.PRODUCTO_NO_ENCONTRADO
+                    else -> ProductMessages.ERROR_ELIMINAR
                 }
-                emit(Resource.Error(errorMessage))
+                emit(Resource.Error(msg))
             }
+
         } catch (e: Exception) {
-            emit(Resource.Error(e.message ?: "Error desconocido"))
+            emit(Resource.Error(ErrorMessages.ERROR_DESCONOCIDO))
         }
     }
 }
-
 
 private fun ProductoDto.toDomain(): Producto {
     return Producto(
