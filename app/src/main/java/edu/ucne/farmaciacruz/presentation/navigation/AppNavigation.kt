@@ -12,6 +12,9 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import edu.ucne.farmaciacruz.data.local.PreferencesManager
 import edu.ucne.farmaciacruz.presentation.admin.dashboard.AdminDashboardScreen
+import edu.ucne.farmaciacruz.presentation.admin.ordenes.AdminOrdenesScreen
+import edu.ucne.farmaciacruz.presentation.admin.productos.AdminProductosScreen
+import edu.ucne.farmaciacruz.presentation.admin.usuarios.AdminUsuariosScreen
 import edu.ucne.farmaciacruz.presentation.checkout.CheckoutScreen
 import edu.ucne.farmaciacruz.presentation.configuracion.ConfiguracionScreen
 import edu.ucne.farmaciacruz.presentation.login.LoginScreen
@@ -102,6 +105,9 @@ fun AppNavigation(
                     navController.navigate(LoginRoute) {
                         popUpTo(0) { inclusive = true }
                     }
+                },
+                onNavigateToAdmin = {
+                    navController.navigate(AdminDashboardRoute)
                 }
             )
         }
@@ -135,11 +141,32 @@ fun AppNavigation(
                 }
             )
         }
+
+        // ==================== RUTAS DE ADMINISTRACIÓN ====================
+
         composable<AdminDashboardRoute> {
             AdminDashboardScreen(
                 onNavigateToProductos = { navController.navigate(AdminProductosRoute) },
                 onNavigateToUsuarios = { navController.navigate(AdminUsuariosRoute) },
                 onNavigateToOrdenes = { navController.navigate(AdminOrdenesRoute) },
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable<AdminProductosRoute> {
+            AdminProductosScreen(
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable<AdminUsuariosRoute> {
+            AdminUsuariosScreen(
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable<AdminOrdenesRoute> {
+            AdminOrdenesScreen(
                 onBack = { navController.popBackStack() }
             )
         }
