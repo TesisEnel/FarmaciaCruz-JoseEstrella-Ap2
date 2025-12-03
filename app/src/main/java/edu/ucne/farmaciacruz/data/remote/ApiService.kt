@@ -5,9 +5,6 @@ import retrofit2.Response
 import retrofit2.http.*
 
 interface ApiService {
-
-    // ==================== AUTENTICACIÓN ====================
-
     @POST("api/Auth/register")
     suspend fun register(@Body dto: RegisterRequest): Response<ApiResponse<AuthResponseDto>>
 
@@ -46,8 +43,6 @@ interface ApiService {
     @DELETE("api/Productos/{id}")
     suspend fun deleteProducto(@Path("id") id: Int): Response<Unit>
 
-    // ==================== ÓRDENES ====================
-
     @POST("api/Orders")
     suspend fun createOrder(@Body order: CreateOrderDto): Response<ApiResponse<OrderResponseDto>>
 
@@ -65,8 +60,6 @@ interface ApiService {
         @Path("id") orderId: Int,
         @Body status: UpdateOrderStatusRequest
     ): Response<Unit>
-
-    // ==================== ADMINISTRACIÓN ====================
 
     @GET("api/Admin/estadisticas")
     suspend fun getEstadisticas(): Response<ApiResponse<Map<String, Any>>>
