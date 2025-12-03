@@ -156,7 +156,7 @@ class AuthRepositoryImpl @Inject constructor(
         flow {
             emit(Resource.Loading())
 
-            val response =apiService.forgotPassword(RecoveryRequest(email))
+            val response = apiService.RecoveryPassword(RecoveryRequest(email))
 
             if (response.isSuccessful) {
                 emit(Resource.Success(Unit))

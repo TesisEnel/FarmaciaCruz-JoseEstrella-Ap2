@@ -17,7 +17,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import edu.ucne.farmaciacruz.domain.model.UsuarioAdmin
@@ -78,16 +77,18 @@ fun AdminUsuariosScreen(
         )
     }
 
-    if (state.showEditRolDialog && state.usuarioSeleccionado != null) {
+    val selectedUsuario = state.usuarioSeleccionado
+
+    if (state.showEditRolDialog && selectedUsuario != null) {
         CambiarRolDialog(
-            usuario = state.usuarioSeleccionado!!,
+            usuario = selectedUsuario,
             roles = state.roles,
             isLoading = state.isLoading,
             onDismiss = { viewModel.onEvent(AdminUsuariosEvent.DismissDialogs) },
             onConfirm = { nuevoRol ->
                 viewModel.onEvent(
                     AdminUsuariosEvent.CambiarRol(
-                        state.usuarioSeleccionado!!.usuarioId,
+                        selectedUsuario.usuarioId,
                         nuevoRol
                     )
                 )
@@ -95,25 +96,25 @@ fun AdminUsuariosScreen(
         )
     }
 
-    if (state.showToggleEstadoDialog && state.usuarioSeleccionado != null) {
+    if (state.showToggleEstadoDialog && selectedUsuario != null) {
         ToggleEstadoDialog(
-            usuario = state.usuarioSeleccionado!!,
+            usuario = selectedUsuario,
             isLoading = state.isLoading,
             onDismiss = { viewModel.onEvent(AdminUsuariosEvent.DismissDialogs) },
             onConfirm = {
                 viewModel.onEvent(
                     AdminUsuariosEvent.ToggleEstado(
-                        state.usuarioSeleccionado!!.usuarioId,
-                        !state.usuarioSeleccionado!!.activo
+                        selectedUsuario.usuarioId,
+                        !selectedUsuario.activo
                     )
                 )
             }
         )
     }
 
-    if (state.showDeleteDialog && state.usuarioSeleccionado != null) {
+    if (state.showDeleteDialog && selectedUsuario != null) {
         DeleteUsuarioDialog(
-            usuario = state.usuarioSeleccionado!!,
+            usuario = selectedUsuario,
             isLoading = state.isLoading,
             onDismiss = { viewModel.onEvent(AdminUsuariosEvent.DismissDialogs) },
             onConfirm = { viewModel.onEvent(AdminUsuariosEvent.ConfirmDelete) }
@@ -245,30 +246,37 @@ private fun FilterChipsRow(
     onRolSelected: (String?) -> Unit,
     onEstadoSelected: (Boolean?) -> Unit
 ) {
+    val isActivosSelected = selectedEstado ?: false
+    val isInactivosSelected = selectedEstado?.not() ?: false
+
     LazyRow(
         contentPadding = PaddingValues(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         item {
+            val isSelected = selectedRol == null && selectedEstado == null
+
             FilterChip(
-                selected = selectedRol == null && selectedEstado == null,
+                selected = isSelected,
                 onClick = {
                     onRolSelected(null)
                     onEstadoSelected(null)
                 },
                 label = { Text("Todos") },
-                leadingIcon = if (selectedRol == null && selectedEstado == null) {
+                leadingIcon = if (isSelected) {
                     { Icon(Icons.Default.Check, contentDescription = null, Modifier.size(18.dp)) }
                 } else null
             )
         }
 
         items(roles) { rol ->
+            val isSelected = selectedRol == rol
+
             FilterChip(
-                selected = selectedRol == rol,
-                onClick = { onRolSelected(if (selectedRol == rol) null else rol) },
+                selected = isSelected,
+                onClick = { onRolSelected(if (isSelected) null else rol) },
                 label = { Text(rol) },
-                leadingIcon = if (selectedRol == rol) {
+                leadingIcon = if (isSelected) {
                     { Icon(Icons.Default.Check, contentDescription = null, Modifier.size(18.dp)) }
                 } else null
             )
@@ -276,10 +284,14 @@ private fun FilterChipsRow(
 
         item {
             FilterChip(
-                selected = selectedEstado == true,
-                onClick = { onEstadoSelected(if (selectedEstado == true) null else true) },
+                selected = isActivosSelected,
+                onClick = {
+                    onEstadoSelected(
+                        if (isActivosSelected) null else true
+                    )
+                },
                 label = { Text("Activos") },
-                leadingIcon = if (selectedEstado == true) {
+                leadingIcon = if (isActivosSelected) {
                     { Icon(Icons.Default.Check, contentDescription = null, Modifier.size(18.dp)) }
                 } else null
             )
@@ -287,10 +299,14 @@ private fun FilterChipsRow(
 
         item {
             FilterChip(
-                selected = selectedEstado == false,
-                onClick = { onEstadoSelected(if (selectedEstado == false) null else false) },
+                selected = isInactivosSelected,
+                onClick = {
+                    onEstadoSelected(
+                        if (isInactivosSelected) null else false
+                    )
+                },
                 label = { Text("Inactivos") },
-                leadingIcon = if (selectedEstado == false) {
+                leadingIcon = if (isInactivosSelected) {
                     { Icon(Icons.Default.Check, contentDescription = null, Modifier.size(18.dp)) }
                 } else null
             )
@@ -310,167 +326,194 @@ private fun UsuarioCard(
         shape = RoundedCornerShape(12.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Surface(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .clip(CircleShape),
-                    color = MaterialTheme.colorScheme.primaryContainer
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Text(
-                            text = usuario.nombre.take(1).uppercase(),
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                    }
-                }
-
-                Spacer(Modifier.width(12.dp))
-
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = usuario.nombreCompleto,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Text(
-                        text = usuario.email,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = if (usuario.activo)
-                        MaterialTheme.colorScheme.primaryContainer
-                    else
-                        MaterialTheme.colorScheme.errorContainer
-                ) {
-                    Text(
-                        text = if (usuario.activo) "Activo" else "Inactivo",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = if (usuario.activo)
-                            MaterialTheme.colorScheme.onPrimaryContainer
-                        else
-                            MaterialTheme.colorScheme.onErrorContainer,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                    )
-                }
-            }
-
+            UsuarioCardHeader(usuario)
             Spacer(Modifier.height(12.dp))
+            UsuarioCardTags(usuario)
+            Spacer(Modifier.height(8.dp))
+            UsuarioCardInfo(usuario)
+            Spacer(Modifier.height(12.dp))
+            HorizontalDivider()
+            Spacer(Modifier.height(8.dp))
+            UsuarioCardActions(
+                usuario = usuario,
+                onCambiarRol = onCambiarRol,
+                onToggleEstado = onToggleEstado,
+                onDelete = onDelete
+            )
+        }
+    }
+}
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                AssistChip(
-                    onClick = { },
-                    label = { Text(usuario.rol) },
-                    leadingIcon = {
-                        Icon(
-                            if (usuario.rol == "Administrador")
-                                Icons.Default.AdminPanelSettings
-                            else
-                                Icons.Default.Person,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp)
-                        )
-                    }
+@Composable
+private fun UsuarioCardHeader(usuario: UsuarioAdmin) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Surface(
+            modifier = Modifier
+                .size(48.dp)
+                .clip(CircleShape),
+            color = MaterialTheme.colorScheme.primaryContainer
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Text(
+                    text = usuario.nombre.take(1).uppercase(),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
+            }
+        }
 
-                if (usuario.emailConfirmado) {
-                    AssistChip(
-                        onClick = { },
-                        label = { Text("Email verificado") },
-                        leadingIcon = {
-                            Icon(
-                                Icons.Default.Verified,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp),
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                        }
+        Spacer(Modifier.width(12.dp))
+
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = usuario.nombreCompleto,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = usuario.email,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+
+        UsuarioEstadoChip(usuario.activo)
+    }
+}
+
+@Composable
+private fun UsuarioEstadoChip(activo: Boolean) {
+    Surface(
+        shape = RoundedCornerShape(8.dp),
+        color = if (activo)
+            MaterialTheme.colorScheme.primaryContainer
+        else
+            MaterialTheme.colorScheme.errorContainer
+    ) {
+        Text(
+            text = if (activo) "Activo" else "Inactivo",
+            style = MaterialTheme.typography.labelSmall,
+            color = if (activo)
+                MaterialTheme.colorScheme.onPrimaryContainer
+            else
+                MaterialTheme.colorScheme.onErrorContainer,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+        )
+    }
+}
+
+@Composable
+private fun UsuarioCardTags(usuario: UsuarioAdmin) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        AssistChip(
+            onClick = { },
+            label = { Text(usuario.rol) },
+            leadingIcon = {
+                Icon(
+                    if (usuario.rol == "Administrador")
+                        Icons.Default.AdminPanelSettings
+                    else
+                        Icons.Default.Person,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp)
+                )
+            }
+        )
+
+        if (usuario.emailConfirmado) {
+            AssistChip(
+                onClick = { },
+                label = { Text("Email verificado") },
+                leadingIcon = {
+                    Icon(
+                        Icons.Default.Verified,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                        tint = MaterialTheme.colorScheme.primary
                     )
                 }
-            }
+            )
+        }
+    }
+}
 
-            Spacer(Modifier.height(8.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                usuario.telefono?.let { telefono ->
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            Icons.Default.Phone,
-                            contentDescription = null,
-                            modifier = Modifier.size(14.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(Modifier.width(4.dp))
-                        Text(
-                            text = telefono,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-
+@Composable
+private fun UsuarioCardInfo(usuario: UsuarioAdmin) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        usuario.telefono?.let { telefono ->
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    Icons.Default.Phone,
+                    contentDescription = null,
+                    modifier = Modifier.size(14.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(Modifier.width(4.dp))
                 Text(
-                    text = "Creado: ${usuario.fechaCreacion.take(10)}",
+                    text = telefono,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
+        }
 
-            Spacer(Modifier.height(12.dp))
+        Text(
+            text = "Creado: ${usuario.fechaCreacion.take(10)}",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
 
-            HorizontalDivider()
+@Composable
+private fun UsuarioCardActions(
+    usuario: UsuarioAdmin,
+    onCambiarRol: () -> Unit,
+    onToggleEstado: () -> Unit,
+    onDelete: () -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.End
+    ) {
+        TextButton(onClick = onCambiarRol) {
+            Icon(Icons.Default.Edit, contentDescription = null, Modifier.size(18.dp))
+            Spacer(Modifier.width(4.dp))
+            Text("Rol")
+        }
 
-            Spacer(Modifier.height(8.dp))
+        TextButton(onClick = onToggleEstado) {
+            Icon(
+                if (usuario.activo) Icons.Default.Block else Icons.Default.CheckCircle,
+                contentDescription = null,
+                Modifier.size(18.dp)
+            )
+            Spacer(Modifier.width(4.dp))
+            Text(if (usuario.activo) "Desactivar" else "Activar")
+        }
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End
-            ) {
-                TextButton(onClick = onCambiarRol) {
-                    Icon(Icons.Default.Edit, contentDescription = null, Modifier.size(18.dp))
-                    Spacer(Modifier.width(4.dp))
-                    Text("Rol")
-                }
-
-                TextButton(onClick = onToggleEstado) {
-                    Icon(
-                        if (usuario.activo) Icons.Default.Block else Icons.Default.CheckCircle,
-                        contentDescription = null,
-                        Modifier.size(18.dp)
-                    )
-                    Spacer(Modifier.width(4.dp))
-                    Text(if (usuario.activo) "Desactivar" else "Activar")
-                }
-
-                TextButton(
-                    onClick = onDelete,
-                    colors = ButtonDefaults.textButtonColors(
-                        contentColor = MaterialTheme.colorScheme.error
-                    )
-                ) {
-                    Icon(Icons.Default.Delete, contentDescription = null, Modifier.size(18.dp))
-                    Spacer(Modifier.width(4.dp))
-                    Text("Eliminar")
-                }
-            }
+        TextButton(
+            onClick = onDelete,
+            colors = ButtonDefaults.textButtonColors(
+                contentColor = MaterialTheme.colorScheme.error
+            )
+        ) {
+            Icon(Icons.Default.Delete, contentDescription = null, Modifier.size(18.dp))
+            Spacer(Modifier.width(4.dp))
+            Text("Eliminar")
         }
     }
 }

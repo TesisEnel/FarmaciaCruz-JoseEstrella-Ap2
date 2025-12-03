@@ -115,6 +115,34 @@ class AdminUsuariosViewModel @Inject constructor(
         }
     }
 
+    private suspend fun handleUsuarioMutationResult(
+        result: Resource<Unit>,
+        successMessage: String,
+        defaultErrorMessage: String
+    ) {
+        when (result) {
+            is Resource.Loading -> {
+                _state.update { it.copy(isLoading = true) }
+            }
+
+            is Resource.Success -> {
+                _state.update { it.copy(isLoading = false) }
+                _uiEvent.send(AdminUsuariosUiEvent.ShowSuccess(successMessage))
+                loadUsuarios()
+            }
+
+            is Resource.Error -> {
+                _state.update { it.copy(isLoading = false) }
+                _uiEvent.send(
+                    AdminUsuariosUiEvent.ShowError(
+                        result.message ?: defaultErrorMessage
+                    )
+                )
+            }
+        }
+    }
+
+
     private fun reduce(block: (AdminUsuariosState) -> AdminUsuariosState) {
         _state.update(block)
     }
@@ -172,48 +200,27 @@ class AdminUsuariosViewModel @Inject constructor(
         reduce { it.copy(usuariosFiltrados = filtered) }
     }
 
-    private fun cambiarRol(id: Int, rol: String) {
+    private fun cambiarRol(usuarioId: Int, nuevoRol: String) {
         viewModelScope.launch {
-            cambiarRolUsuarioUseCase(id, rol).collect { r ->
-                when (r) {
-                    is Resource.Loading ->
-                        reduce { it.copy(isLoading = true) }
-
-                    is Resource.Success -> {
-                        reduce { it.copy(isLoading = false) }
-                        sendUiEvent(AdminUsuariosUiEvent.ShowSuccess("Rol actualizado"))
-                        onEvent(AdminUsuariosEvent.DismissDialogs)
-                        loadUsuarios()
-                    }
-
-                    is Resource.Error -> {
-                        reduce { it.copy(isLoading = false) }
-                        sendUiEvent(AdminUsuariosUiEvent.ShowError(r.message ?: "Error"))
-                    }
-                }
+            cambiarRolUsuarioUseCase(usuarioId, nuevoRol).collect { result ->
+                handleUsuarioMutationResult(
+                    result = result,
+                    successMessage = "Rol actualizado exitosamente",
+                    defaultErrorMessage = "Error al cambiar rol"
+                )
             }
         }
     }
 
-    private fun toggleEstado(id: Int, activo: Boolean) {
+    private fun toggleEstado(usuarioId: Int, nuevoEstado: Boolean) {
         viewModelScope.launch {
-            cambiarEstadoUsuarioUseCase(id, activo).collect { r ->
-                when (r) {
-                    is Resource.Loading ->
-                        reduce { it.copy(isLoading = true) }
-
-                    is Resource.Success -> {
-                        reduce { it.copy(isLoading = false) }
-                        sendUiEvent(AdminUsuariosUiEvent.ShowSuccess("Estado actualizado"))
-                        onEvent(AdminUsuariosEvent.DismissDialogs)
-                        loadUsuarios()
-                    }
-
-                    is Resource.Error -> {
-                        reduce { it.copy(isLoading = false) }
-                        sendUiEvent(AdminUsuariosUiEvent.ShowError(r.message ?: "Error"))
-                    }
-                }
+            cambiarEstadoUsuarioUseCase(usuarioId, nuevoEstado).collect { result ->
+                val mensaje = if (nuevoEstado) "Usuario activado" else "Usuario desactivado"
+                handleUsuarioMutationResult(
+                    result = result,
+                    successMessage = mensaje,
+                    defaultErrorMessage = "Error al cambiar estado"
+                )
             }
         }
     }
@@ -222,23 +229,12 @@ class AdminUsuariosViewModel @Inject constructor(
         val usuario = _state.value.usuarioSeleccionado ?: return
 
         viewModelScope.launch {
-            deleteUsuarioUseCase(usuario.usuarioId).collect { r ->
-                when (r) {
-                    is Resource.Loading ->
-                        reduce { it.copy(isLoading = true) }
-
-                    is Resource.Success -> {
-                        reduce { it.copy(isLoading = false) }
-                        sendUiEvent(AdminUsuariosUiEvent.ShowSuccess("Usuario eliminado"))
-                        onEvent(AdminUsuariosEvent.DismissDialogs)
-                        loadUsuarios()
-                    }
-
-                    is Resource.Error -> {
-                        reduce { it.copy(isLoading = false) }
-                        sendUiEvent(AdminUsuariosUiEvent.ShowError(r.message ?: "Error"))
-                    }
-                }
+            deleteUsuarioUseCase(usuario.usuarioId).collect { result ->
+                handleUsuarioMutationResult(
+                    result = result,
+                    successMessage = "Usuario eliminado exitosamente",
+                    defaultErrorMessage = "Error al eliminar usuario"
+                )
             }
         }
     }

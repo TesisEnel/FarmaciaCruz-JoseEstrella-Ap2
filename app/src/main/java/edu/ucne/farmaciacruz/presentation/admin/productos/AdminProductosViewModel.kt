@@ -106,6 +106,7 @@ class AdminProductosViewModel @Inject constructor(
         _state.update { it.copy(productosFiltrados = filtered) }
     }
 
+
     private fun selectProducto(producto: Producto) {
         _state.update {
             it.copy(

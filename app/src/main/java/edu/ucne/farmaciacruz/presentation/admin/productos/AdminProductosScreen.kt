@@ -217,7 +217,6 @@ private fun AdminProductosContent(
     if (state.showEditDialog && state.productoSeleccionado != null) {
         EditProductoDialog(
             producto = state.productoSeleccionado,
-            categorias = state.categorias,
             isLoading = state.isLoading,
             onDismiss = { onEvent(AdminProductosEvent.DismissDialogs) },
             onConfirm = { updated ->
@@ -534,7 +533,6 @@ private fun AddProductoDialog(
 @Composable
 private fun EditProductoDialog(
     producto: Producto,
-    categorias: List<String>,
     isLoading: Boolean,
     onDismiss: () -> Unit,
     onConfirm: (Producto) -> Unit
