@@ -35,9 +35,9 @@ fun AdminUsuariosScreen(
             when (event) {
                 is AdminUsuariosUiEvent.ShowError ->
                     snackbarHostState.showSnackbar(event.message)
+
                 is AdminUsuariosUiEvent.ShowSuccess ->
                     snackbarHostState.showSnackbar(event.message)
-                else -> Unit
             }
         }
     }
@@ -68,6 +68,7 @@ fun AdminUsuariosScreen(
             )
         }
     ) { padding ->
+
         AdminUsuariosContent(
             state = state,
             modifier = Modifier
@@ -126,11 +127,10 @@ fun AdminUsuariosScreen(
 private fun AdminUsuariosContent(
     state: AdminUsuariosState,
     modifier: Modifier = Modifier,
-    onEvent: (AdminUsuariosUiEvent) -> Unit
+    onEvent: (AdminUsuariosEvent) -> Unit
 ) {
-    Column(
-        modifier = modifier
-    ) {
+    Column(modifier = modifier) {
+
         SearchBar(
             query = state.searchQuery,
             onQueryChange = { onEvent(AdminUsuariosEvent.SearchQueryChanged(it)) },
@@ -185,22 +185,17 @@ private fun AdminUsuariosContent(
                             items = state.usuariosFiltrados,
                             key = { it.usuarioId }
                         ) { usuario ->
+
                             UsuarioCard(
                                 usuario = usuario,
                                 onCambiarRol = {
-                                    onEvent(
-                                        AdminUsuariosEvent.ShowCambiarRolDialog(usuario)
-                                    )
+                                    onEvent(AdminUsuariosEvent.ShowCambiarRolDialog(usuario))
                                 },
                                 onToggleEstado = {
-                                    onEvent(
-                                        AdminUsuariosEvent.ShowToggleEstadoDialog(usuario)
-                                    )
+                                    onEvent(AdminUsuariosEvent.ShowToggleEstadoDialog(usuario))
                                 },
                                 onDelete = {
-                                    onEvent(
-                                        AdminUsuariosEvent.ShowDeleteDialog(usuario)
-                                    )
+                                    onEvent(AdminUsuariosEvent.ShowDeleteDialog(usuario))
                                 }
                             )
                         }
@@ -253,6 +248,7 @@ private fun FilterChipsRow(
         contentPadding = PaddingValues(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
+
         item {
             val isSelected = selectedRol == null && selectedEstado == null
 
@@ -264,7 +260,7 @@ private fun FilterChipsRow(
                 },
                 label = { Text("Todos") },
                 leadingIcon = if (isSelected) {
-                    { Icon(Icons.Default.Check, contentDescription = null, Modifier.size(18.dp)) }
+                    { Icon(Icons.Default.Check, null, Modifier.size(18.dp)) }
                 } else null
             )
         }
@@ -277,7 +273,7 @@ private fun FilterChipsRow(
                 onClick = { onRolSelected(if (isSelected) null else rol) },
                 label = { Text(rol) },
                 leadingIcon = if (isSelected) {
-                    { Icon(Icons.Default.Check, contentDescription = null, Modifier.size(18.dp)) }
+                    { Icon(Icons.Default.Check, null, Modifier.size(18.dp)) }
                 } else null
             )
         }
@@ -285,14 +281,10 @@ private fun FilterChipsRow(
         item {
             FilterChip(
                 selected = isActivosSelected,
-                onClick = {
-                    onEstadoSelected(
-                        if (isActivosSelected) null else true
-                    )
-                },
+                onClick = { onEstadoSelected(if (isActivosSelected) null else true) },
                 label = { Text("Activos") },
                 leadingIcon = if (isActivosSelected) {
-                    { Icon(Icons.Default.Check, contentDescription = null, Modifier.size(18.dp)) }
+                    { Icon(Icons.Default.Check, null, Modifier.size(18.dp)) }
                 } else null
             )
         }
@@ -300,14 +292,10 @@ private fun FilterChipsRow(
         item {
             FilterChip(
                 selected = isInactivosSelected,
-                onClick = {
-                    onEstadoSelected(
-                        if (isInactivosSelected) null else false
-                    )
-                },
+                onClick = { onEstadoSelected(if (isInactivosSelected) null else false) },
                 label = { Text("Inactivos") },
                 leadingIcon = if (isInactivosSelected) {
-                    { Icon(Icons.Default.Check, contentDescription = null, Modifier.size(18.dp)) }
+                    { Icon(Icons.Default.Check, null, Modifier.size(18.dp)) }
                 } else null
             )
         }
@@ -326,14 +314,23 @@ private fun UsuarioCard(
         shape = RoundedCornerShape(12.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
+
             UsuarioCardHeader(usuario)
+
             Spacer(Modifier.height(12.dp))
+
             UsuarioCardTags(usuario)
+
             Spacer(Modifier.height(8.dp))
+
             UsuarioCardInfo(usuario)
+
             Spacer(Modifier.height(12.dp))
+
             HorizontalDivider()
+
             Spacer(Modifier.height(8.dp))
+
             UsuarioCardActions(
                 usuario = usuario,
                 onCambiarRol = onCambiarRol,
@@ -350,6 +347,7 @@ private fun UsuarioCardHeader(usuario: UsuarioAdmin) {
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
+
         Surface(
             modifier = Modifier
                 .size(48.dp)
@@ -375,6 +373,7 @@ private fun UsuarioCardHeader(usuario: UsuarioAdmin) {
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
+
             Text(
                 text = usuario.email,
                 style = MaterialTheme.typography.bodyMedium,
@@ -415,6 +414,7 @@ private fun UsuarioCardTags(usuario: UsuarioAdmin) {
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
+
         AssistChip(
             onClick = { },
             label = { Text(usuario.rol) },
@@ -432,14 +432,13 @@ private fun UsuarioCardTags(usuario: UsuarioAdmin) {
 
         if (usuario.emailConfirmado) {
             AssistChip(
-                onClick = { },
+                onClick = {},
                 label = { Text("Email verificado") },
                 leadingIcon = {
                     Icon(
                         Icons.Default.Verified,
                         contentDescription = null,
-                        modifier = Modifier.size(16.dp),
-                        tint = MaterialTheme.colorScheme.primary
+                        modifier = Modifier.size(16.dp)
                     )
                 }
             )
@@ -453,6 +452,7 @@ private fun UsuarioCardInfo(usuario: UsuarioAdmin) {
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
+
         usuario.telefono?.let { telefono ->
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
@@ -461,7 +461,9 @@ private fun UsuarioCardInfo(usuario: UsuarioAdmin) {
                     modifier = Modifier.size(14.dp),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+
                 Spacer(Modifier.width(4.dp))
+
                 Text(
                     text = telefono,
                     style = MaterialTheme.typography.bodySmall,
@@ -489,6 +491,7 @@ private fun UsuarioCardActions(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.End
     ) {
+
         TextButton(onClick = onCambiarRol) {
             Icon(Icons.Default.Edit, contentDescription = null, Modifier.size(18.dp))
             Spacer(Modifier.width(4.dp))
@@ -609,15 +612,11 @@ private fun ToggleEstadoDialog(
         text = {
             Column {
                 Text("¿Estás seguro de que deseas $accion a este usuario?")
-
                 Spacer(Modifier.height(12.dp))
 
+                Text(usuario.nombreCompleto, fontWeight = FontWeight.SemiBold)
                 Text(
-                    text = usuario.nombreCompleto,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Text(
-                    text = usuario.email,
+                    usuario.email,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -625,7 +624,7 @@ private fun ToggleEstadoDialog(
                 if (usuario.activo) {
                     Spacer(Modifier.height(12.dp))
                     Text(
-                        text = "El usuario no podrá iniciar sesión mientras esté desactivado.",
+                        "El usuario no podrá iniciar sesión mientras esté desactivado.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.error
                     )
@@ -640,9 +639,7 @@ private fun ToggleEstadoDialog(
                     ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.error
                     )
-                } else {
-                    ButtonDefaults.buttonColors()
-                }
+                } else ButtonDefaults.buttonColors()
             ) {
                 if (isLoading) {
                     CircularProgressIndicator(
@@ -673,11 +670,7 @@ private fun DeleteUsuarioDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         icon = {
-            Icon(
-                Icons.Default.Warning,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.error
-            )
+            Icon(Icons.Default.Warning, null, tint = MaterialTheme.colorScheme.error)
         },
         title = { Text("Eliminar Usuario") },
         text = {
@@ -686,12 +679,10 @@ private fun DeleteUsuarioDialog(
 
                 Spacer(Modifier.height(12.dp))
 
+                Text(usuario.nombreCompleto, fontWeight = FontWeight.SemiBold)
+
                 Text(
-                    text = usuario.nombreCompleto,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Text(
-                    text = usuario.email,
+                    usuario.email,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -708,8 +699,7 @@ private fun DeleteUsuarioDialog(
                 if (isLoading) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(16.dp),
-                        strokeWidth = 2.dp,
-                        color = MaterialTheme.colorScheme.onError
+                        strokeWidth = 2.dp
                     )
                 } else {
                     Text("Eliminar")
@@ -734,19 +724,24 @@ private fun ErrorContent(
         modifier = modifier.padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+
         Icon(
             Icons.Default.Error,
             contentDescription = null,
             modifier = Modifier.size(48.dp),
             tint = MaterialTheme.colorScheme.error
         )
+
         Spacer(Modifier.height(16.dp))
+
         Text(
             text = message,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
+
         Spacer(Modifier.height(16.dp))
+
         Button(onClick = onRetry) {
             Text("Reintentar")
         }
@@ -759,13 +754,16 @@ private fun EmptyContent(modifier: Modifier = Modifier) {
         modifier = modifier.padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+
         Icon(
             Icons.Default.PersonOff,
             contentDescription = null,
             modifier = Modifier.size(48.dp),
             tint = MaterialTheme.colorScheme.onSurfaceVariant
         )
+
         Spacer(Modifier.height(16.dp))
+
         Text(
             text = "No se encontraron usuarios",
             style = MaterialTheme.typography.bodyMedium,
@@ -777,6 +775,7 @@ private fun EmptyContent(modifier: Modifier = Modifier) {
 @Preview(showSystemUi = true)
 @Composable
 private fun AdminUsuariosScreenPreview() {
+
     val fakeUsuario = UsuarioAdmin(
         usuarioId = 1,
         nombre = "Juan",
@@ -785,10 +784,9 @@ private fun AdminUsuariosScreenPreview() {
         activo = true,
         emailConfirmado = true,
         telefono = "809-555-5555",
-        fechaCreacion = "",
-        apellido = "",
+        fechaCreacion = "2024-01-01",
+        apellido = "Pérez",
         ultimoAcceso = ""
-
     )
 
     val previewState = AdminUsuariosState(
