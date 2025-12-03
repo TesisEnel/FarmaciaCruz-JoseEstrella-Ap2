@@ -241,67 +241,93 @@ private fun FilterChipsRow(
     onRolSelected: (String?) -> Unit,
     onEstadoSelected: (Boolean?) -> Unit
 ) {
-    val isActivosSelected = selectedEstado ?: false
-    val isInactivosSelected = selectedEstado?.not() ?: false
-
-    val nuevoEstadoActivos = true.takeUnless { isActivosSelected }
-    val nuevoEstadoInactivos = false.takeUnless { isInactivosSelected }
+    val isActivosSelected = selectedEstado == true
+    val isInactivosSelected = selectedEstado == false
 
     LazyRow(
         contentPadding = PaddingValues(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        item {
-            val isSelected = selectedRol == null && selectedEstado == null
-            FilterChip(
-                selected = isSelected,
-                onClick = {
-                    onRolSelected(null)
-                    onEstadoSelected(null)
-                },
-                label = { Text("Todos") },
-                leadingIcon = if (isSelected) {
-                    { Icon(Icons.Default.Check, null, Modifier.size(18.dp)) }
-                } else null
-            )
-        }
+        item { TodosChip(selectedRol, selectedEstado, onRolSelected, onEstadoSelected) }
 
         items(roles) { rol ->
-            val isSelected = selectedRol == rol
-            val nuevoRol = if (isSelected) null else rol
-            FilterChip(
-                selected = isSelected,
-                onClick = { onRolSelected(nuevoRol) },
-                label = { Text(rol) },
-                leadingIcon = if (isSelected) {
-                    { Icon(Icons.Default.Check, null, Modifier.size(18.dp)) }
-                } else null
+            RolChip(rol, selectedRol, onRolSelected)
+        }
+
+        item {
+            EstadoChip(
+                label = "Activos",
+                isSelected = isActivosSelected,
+                onSelected = { onEstadoSelected(true.takeUnless { isActivosSelected }) }
             )
         }
 
         item {
-            FilterChip(
-                selected = isActivosSelected,
-                onClick = { onEstadoSelected(nuevoEstadoActivos) },
-                label = { Text("Activos") },
-                leadingIcon = if (isActivosSelected) {
-                    { Icon(Icons.Default.Check, null, Modifier.size(18.dp)) }
-                } else null
-            )
-        }
-
-        item {
-            FilterChip(
-                selected = isInactivosSelected,
-                onClick = { onEstadoSelected(nuevoEstadoInactivos) },
-                label = { Text("Inactivos") },
-                leadingIcon = if (isInactivosSelected) {
-                    { Icon(Icons.Default.Check, null, Modifier.size(18.dp)) }
-                } else null
+            EstadoChip(
+                label = "Inactivos",
+                isSelected = isInactivosSelected,
+                onSelected = { onEstadoSelected(false.takeUnless { isInactivosSelected }) }
             )
         }
     }
 }
+
+@Composable
+private fun TodosChip(
+    selectedRol: String?,
+    selectedEstado: Boolean?,
+    onRolSelected: (String?) -> Unit,
+    onEstadoSelected: (Boolean?) -> Unit
+) {
+    val isSelected = selectedRol == null && selectedEstado == null
+
+    FilterChip(
+        selected = isSelected,
+        onClick = {
+            onRolSelected(null)
+            onEstadoSelected(null)
+        },
+        label = { Text("Todos") },
+        leadingIcon = if (isSelected) {
+            { Icon(Icons.Default.Check, null, Modifier.size(18.dp)) }
+        } else null
+    )
+}
+
+@Composable
+private fun RolChip(
+    rol: String,
+    selectedRol: String?,
+    onRolSelected: (String?) -> Unit
+) {
+    val isSelected = selectedRol == rol
+
+    FilterChip(
+        selected = isSelected,
+        onClick = { onRolSelected(if (isSelected) null else rol) },
+        label = { Text(rol) },
+        leadingIcon = if (isSelected) {
+            { Icon(Icons.Default.Check, null, Modifier.size(18.dp)) }
+        } else null
+    )
+}
+
+@Composable
+private fun EstadoChip(
+    label: String,
+    isSelected: Boolean,
+    onSelected: () -> Unit
+) {
+    FilterChip(
+        selected = isSelected,
+        onClick = onSelected,
+        label = { Text(label) },
+        leadingIcon = if (isSelected) {
+            { Icon(Icons.Default.Check, null, Modifier.size(18.dp)) }
+        } else null
+    )
+}
+
 
 @Composable
 private fun UsuarioCard(
