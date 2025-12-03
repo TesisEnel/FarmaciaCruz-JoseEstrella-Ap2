@@ -10,11 +10,11 @@ import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
-abstract class AdminModule {
+interface AdminModule {
 
     @Binds
     @Singleton
-    abstract fun bindAdminRepository(
+    fun bindAdminRepository(
         impl: AdminRepositoryImpl
     ): AdminRepository
 }
