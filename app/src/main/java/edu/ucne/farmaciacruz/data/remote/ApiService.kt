@@ -5,21 +5,26 @@ import retrofit2.Response
 import retrofit2.http.*
 
 interface ApiService {
-    @POST("api/Auth/register")
-    suspend fun register(@Body dto: RegisterRequest): Response<ApiResponse<AuthResponseDto>>
+    @POST("api/Usuarios/login")
+    suspend fun login(@Body request: LoginRequest): Response<ApiResponse<AuthResponseDto>>
 
-    @POST("api/Auth/login")
-    suspend fun login(@Body dto: LoginRequest): Response<ApiResponse<AuthResponseDto>>
+    @POST("api/Usuarios/registro")
+    suspend fun register(@Body request: RegisterRequest): Response<ApiResponse<AuthResponseDto>>
 
-    @POST("api/Auth/logout")
-    suspend fun logout(): Response<Unit>
+    @POST("api/Usuarios/refresh-token")
+    suspend fun refreshToken(@Body request: RefreshTokenRequest): Response<ApiResponse<AuthResponseDto>>
 
-    @POST("api/Auth/forgot-password")
-    suspend fun forgotPassword(@Body dto: RecoveryRequest): Response<ApiResponse<Unit>>
+    @GET("api/Usuarios/perfil")
+    suspend fun getProfile(): Response<ApiResponse<UsuarioDto>>
 
+    @PUT("api/Usuarios/perfil")
+    suspend fun updateProfile(@Body request: UpdateProfileRequest): Response<ApiResponse<UsuarioDto>>
 
-    @GET("api/Auth/me")
-    suspend fun getMe(): Response<ApiResponse<UsuarioReadDto>>
+    @POST("api/Usuarios/cambiar-password")
+    suspend fun changePassword(@Body request: ChangePasswordRequest): Response<ApiResponse<Unit>>
+
+    @POST("api/Usuarios/solicitar-recuperacion-password")
+    suspend fun RecoveryPassword(@Body request: RecoveryRequest): Response<ApiResponse<Unit>>
 
 
     @GET("api/Productos")
