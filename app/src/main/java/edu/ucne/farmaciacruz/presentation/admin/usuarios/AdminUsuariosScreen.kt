@@ -164,7 +164,7 @@ private fun AdminUsuariosContent(
 
                 state.error != null -> {
                     ErrorContent(
-                        message = state.error!!,
+                        message = state.error.orEmpty(),
                         onRetry = { onEvent(AdminUsuariosEvent.LoadUsuarios) },
                         modifier = Modifier.align(Alignment.Center)
                     )
@@ -244,8 +244,8 @@ private fun FilterChipsRow(
     val isActivosSelected = selectedEstado ?: false
     val isInactivosSelected = selectedEstado?.not() ?: false
 
-    val nuevoEstadoActivos = if (isActivosSelected) null else true
-    val nuevoEstadoInactivos = if (isInactivosSelected) null else false
+    val nuevoEstadoActivos = true.takeUnless { isActivosSelected }
+    val nuevoEstadoInactivos = false.takeUnless { isInactivosSelected }
 
     LazyRow(
         contentPadding = PaddingValues(horizontal = 16.dp),
