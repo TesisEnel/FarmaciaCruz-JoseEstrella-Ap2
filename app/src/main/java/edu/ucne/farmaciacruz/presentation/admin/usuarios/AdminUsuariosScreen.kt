@@ -267,10 +267,11 @@ private fun FilterChipsRow(
 
         items(roles) { rol ->
             val isSelected = selectedRol == rol
+            val nuevoRol = if (isSelected) null else rol
 
             FilterChip(
                 selected = isSelected,
-                onClick = { onRolSelected(if (isSelected) null else rol) },
+                onClick = { onRolSelected(nuevoRol) },
                 label = { Text(rol) },
                 leadingIcon = if (isSelected) {
                     { Icon(Icons.Default.Check, null, Modifier.size(18.dp)) }
@@ -290,9 +291,11 @@ private fun FilterChipsRow(
         }
 
         item {
+            val nuevoEstado = if (isInactivosSelected) null else false
+
             FilterChip(
                 selected = isInactivosSelected,
-                onClick = { onEstadoSelected(if (isInactivosSelected) null else false) },
+                onClick = { onEstadoSelected(nuevoEstado) },
                 label = { Text("Inactivos") },
                 leadingIcon = if (isInactivosSelected) {
                     { Icon(Icons.Default.Check, null, Modifier.size(18.dp)) }
