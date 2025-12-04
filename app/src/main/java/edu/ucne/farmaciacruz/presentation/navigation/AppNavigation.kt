@@ -10,7 +10,6 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.toRoute
 import edu.ucne.farmaciacruz.data.local.PreferencesManager
 import edu.ucne.farmaciacruz.presentation.admin.dashboard.AdminDashboardScreen
 import edu.ucne.farmaciacruz.presentation.admin.ordenes.AdminOrdenesScreen
@@ -115,7 +114,6 @@ fun AppNavigation(
         }
 
         composable<ProductoDetalleRoute> { backStackEntry ->
-            val args = backStackEntry.toRoute<ProductoDetalleRoute>()
             ProductoDetalleScreen(
                 onBack = {
                     navController.popBackStack()
