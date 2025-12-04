@@ -66,7 +66,7 @@ private fun OrdenesContent(
 
             state.error != null -> {
                 ErrorSection(
-                    message = state.error ?: "Error desconocido",
+                    message = state.error,
                     onRetry = onRetry
                 )
             }

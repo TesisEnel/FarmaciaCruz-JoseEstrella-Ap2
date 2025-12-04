@@ -1,6 +1,5 @@
 package edu.ucne.farmaciacruz.domain.usecase.login
 
-import edu.ucne.farmaciacruz.data.repository.AuthRepositoryImpl
 import edu.ucne.farmaciacruz.domain.model.User
 import edu.ucne.farmaciacruz.domain.repository.AuthRepository
 import kotlinx.coroutines.flow.Flow

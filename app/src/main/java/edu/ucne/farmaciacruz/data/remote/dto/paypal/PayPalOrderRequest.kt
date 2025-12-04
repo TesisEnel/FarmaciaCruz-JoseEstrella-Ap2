@@ -1,8 +1,6 @@
 package edu.ucne.farmaciacruz.data.remote.dto.paypal
 
 import com.google.gson.annotations.SerializedName
-import edu.ucne.farmaciacruz.data.remote.dto.paypal.ApplicationContext
-import edu.ucne.farmaciacruz.data.remote.dto.paypal.PurchaseUnit
 
 
 data class PayPalOrderRequest(
